@@ -1,0 +1,12 @@
+export const MAX_HTML_BYTES = 2 * 1024 * 1024;
+export const MAX_COVER_BYTES = 5 * 1024 * 1024;
+export const MAX_BOOK_TITLE_LENGTH = 500;
+export const MAX_BOOK_AUTHOR_LENGTH = 300;
+export const MAX_ANNOTATION_TEXT_LENGTH = 65536;
+export const BOOKS_PER_PAGE = 36;
+export const MIN_USERNAME_LENGTH = 3;
+export const MAX_USERNAME_LENGTH = 50;
+export const MIN_PASSWORD_LENGTH = 12;
+export const MAX_PASSWORD_LENGTH = 128;
+export const RECOVERY_WORD_COUNT = 8;
+export const MAX_RECOVERY_PHRASE_LENGTH = 256;

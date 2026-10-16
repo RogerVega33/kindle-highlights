@@ -1,0 +1,45 @@
+name: kindle-highlights
+
+services:
+  app:
+    image: kindle-highlights:local
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      PGHOST: database
+      PGPORT: "5432"
+      PGDATABASE: ${PGDATABASE:?Define PGDATABASE antes de iniciar la aplicación.}
+      PGUSER: ${PGUSER:?Define PGUSER antes de iniciar la aplicación.}
+      PGPASSWORD: ${PGPASSWORD:?Define PGPASSWORD antes de iniciar la aplicación.}
+    ports:
+      - "3001:3001"
+    depends_on:
+      database:
+        condition: service_healthy
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+
+  database:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE:?Define PGDATABASE antes de iniciar PostgreSQL.}
+      POSTGRES_USER: ${PGUSER:?Define PGUSER antes de iniciar PostgreSQL.}
+      POSTGRES_PASSWORD: ${PGPASSWORD:?Define PGPASSWORD antes de iniciar PostgreSQL.}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:

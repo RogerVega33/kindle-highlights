@@ -1,0 +1,36 @@
+{
+  "name": "kindle-highlights",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "dev": "node --env-file=.env scripts/dev.mjs",
+    "dev:client": "vite --host 127.0.0.1",
+    "dev:server": "node --env-file=.env --import tsx server/index.ts",
+    "build": "tsc --noEmit && vite build && tsc -p tsconfig.server.json && node scripts/copy-schema.mjs",
+    "start": "node --env-file=.env build/server/index.js --production",
+    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cheerio": "^1.1.2",
+    "fastify": "^5.12.7",
+    "lucide-react": "^0.468.0",
+    "pg": "^8.23.1",
+    "pino": "^10.4.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.3",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5"
+  }
+}
