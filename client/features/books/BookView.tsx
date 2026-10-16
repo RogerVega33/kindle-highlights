@@ -10,6 +10,7 @@ import { plural, positionLabel, searchable } from '../../lib/format';
 import { AnnotationCard } from '../annotations/AnnotationCard';
 import { DeleteAnnotationDialog, EditAnnotationDialog, OriginalAnnotationDialog } from '../annotations/AnnotationDialogs';
 import { BookMetadata } from './BookMetadata';
+import { BookCoverMenu } from './BookCoverMenu';
 
 export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImport, onCopy, onUpdate, onAnnotationEdit, onMetadataUpdate, coverBusy }: {
   book: BookDetail; loading: boolean; onBack: () => void; onCover: (book: Book) => void;
@@ -22,11 +23,20 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set());
   const [deletingAnnotation, setDeletingAnnotation] = useState<Annotation | null>(null);
   const [annotationDialog, setAnnotationDialog] = useState<{ kind: 'edit' | 'original'; annotation: Annotation } | null>(null);
+  const [coverActionsVisible, setCoverActionsVisible] = useState(false);
+  const coverActionsTimer = useRef<number | null>(null);
   const sectionId = useId();
   const activeFilter = filter === 'highlight' || filter === 'note' ? filter : 'all';
   const annotations = useMemo(() => book.annotations.filter(annotation => annotation.kind === 'highlight' || annotation.kind === 'note'), [book.annotations]);
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); }, []);
+  useEffect(() => {
+    setCoverActionsVisible(false);
+    return () => {
+      if (coverActionsTimer.current !== null) window.clearTimeout(coverActionsTimer.current);
+      coverActionsTimer.current = null;
+    };
+  }, [book.id, book.coverUrl]);
   const visible = useMemo(() => {
     const search = searchable(query.trim());
     return annotations.filter(annotation =>
@@ -47,6 +57,22 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
     setCollapsedSections(previous => chapterIds.every(id => previous.has(id)) ? new Set() : new Set(chapterIds));
   }
 
+  function hideCoverActions() {
+    if (coverActionsTimer.current !== null) window.clearTimeout(coverActionsTimer.current);
+    coverActionsTimer.current = null;
+    setCoverActionsVisible(false);
+  }
+
+  function showCoverActions() {
+    if (coverBusy) return;
+    if (coverActionsTimer.current !== null) window.clearTimeout(coverActionsTimer.current);
+    setCoverActionsVisible(true);
+    coverActionsTimer.current = window.setTimeout(() => {
+      coverActionsTimer.current = null;
+      setCoverActionsVisible(false);
+    }, 3000);
+  }
+
   function toggleSection(id: string) {
     setCollapsedSections(previous => {
       const next = new Set(previous);
@@ -62,14 +88,32 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
   ];
   return (
     <><main className="page-shell detail-page">
-      <button type="button" className="back-button" onClick={onBack}><ArrowLeft size={17} /> Volver a mi biblioteca</button>
+      <button type="button" className="back-button" onClick={onBack}><ArrowLeft size={17} /> Biblioteca</button>
       <div className="detail-layout">
         <aside className="book-sidebar">
-          <div className="detail-cover"><BookCover book={book} detail /><button type="button" className="cover-edit-button" disabled={coverBusy} onClick={() => onCover(book)}><ImagePlus size={15} />{book.coverUrl ? 'Cambiar portada' : 'Agregar portada'}</button></div>
-          <BookMetadata book={book} headingRef={title} onUpdated={onMetadataUpdate} />
-          <div className="book-stats"><span><Highlighter size={15} />{plural(book.highlightCount, 'subrayado', 'subrayados')}</span><span><StickyNote size={15} />{plural(book.noteCount, 'nota', 'notas')}</span></div>
-          <button type="button" className="button button-outline sidebar-import" onClick={() => onImport(book)}><Plus size={16} /> Importar más</button>
-          {book.coverUrl && <button type="button" className="remove-cover-button" disabled={coverBusy} onClick={() => onRemoveCover(book)}><Trash2 size={12} /> Quitar portada</button>}
+          <div className="book-cover-summary">
+            <div className={'detail-cover' + (coverActionsVisible ? ' is-active' : '')}>
+              <div className="detail-cover-static"><BookCover book={book} detail /></div>
+              <button type="button" className="detail-cover-trigger" disabled={coverBusy}
+                aria-label={'Mostrar opciones de portada de ' + book.title}
+                onClick={showCoverActions}>
+                <BookCover book={book} detail />
+              </button>
+              <button type="button" className="cover-edit-button" disabled={coverBusy}
+                onClick={() => { hideCoverActions(); onCover(book); }}>
+                <ImagePlus size={15} aria-hidden="true" />{book.coverUrl ? 'Cambiar portada' : 'Agregar portada'}
+              </button>
+            </div>
+          </div>
+          <div className="book-details">
+            <BookMetadata book={book} headingRef={title} onUpdated={onMetadataUpdate} />
+            <div className="book-stats"><span><Highlighter size={15} />{plural(book.highlightCount, 'subrayado', 'subrayados')}</span><span><StickyNote size={15} />{plural(book.noteCount, 'nota', 'notas')}</span></div>
+          </div>
+          <div className="book-actions">
+            <button type="button" className="button button-outline sidebar-import" onClick={() => onImport(book)}><Plus size={16} /> Importar más</button>
+            <BookCoverMenu key={book.id} book={book} busy={coverBusy} onCover={item => { hideCoverActions(); onCover(item); }} onRemoveCover={onRemoveCover} />
+            {book.coverUrl && <button type="button" className="remove-cover-button" disabled={coverBusy} onClick={() => onRemoveCover(book)}><Trash2 size={12} /> Quitar portada</button>}
+          </div>
         </aside>
         <section className="reading-pane" aria-label="Anotaciones del libro">
           <header className="reading-header"><h2>Anotaciones</h2></header>
@@ -77,7 +121,7 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
             <div className="annotation-toolbar">
               <div className="annotation-tabs" aria-label="Filtrar por tipo">{filters.map(item => <button type="button" key={item.value} className={activeFilter === item.value ? 'active' : ''} aria-pressed={activeFilter === item.value} onClick={() => setFilter(item.value)}>{item.label}<span>{item.count}</span></button>)}</div>
               {chapterIds.length > 0 && <button type="button" className="chapters-toggle" aria-label={allChaptersCollapsed ? 'Expandir todos los capítulos' : 'Contraer todos los capítulos'} aria-expanded={!allChaptersCollapsed} aria-controls={groups.filter(group => group.title).map(group => sectionId + '-' + group.id).join(' ') || undefined} onClick={toggleAllChapters}>
-                <ChevronsUpDown size={15} aria-hidden="true" />{allChaptersCollapsed ? 'Expandir todos' : 'Contraer todos'}
+                <ChevronsUpDown size={15} aria-hidden="true" /><span className="chapters-toggle-label">{allChaptersCollapsed ? 'Expandir todos' : 'Contraer todos'}</span>
               </button>}
             </div>
             <label className="search-field annotation-search"><Search size={17} /><input type="search" placeholder="Buscar entre tus anotaciones…" value={query} onChange={event => setQuery(event.target.value)} aria-label="Buscar en las anotaciones" />{query && <button type="button" className="icon-button" aria-label="Limpiar búsqueda de anotaciones" onClick={() => setQuery('')}><X size={15} /></button>}</label>

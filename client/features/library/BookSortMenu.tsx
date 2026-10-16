@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react';
+import { ArrowDownUp, Check, ChevronDown } from 'lucide-react';
 import type { BookSort } from '../../../shared/types';
 import { usePopupMenu } from '../../hooks/usePopupMenu';
 
@@ -15,7 +15,8 @@ export function BookSortMenu({ value, onChange }: { value: BookSort; onChange: (
   return <div className="sort-control" {...menu.rootProps}>
     <button type="button" className="sort-trigger" ref={menu.triggerRef} aria-label={'Ordenar libros: ' + selected.label}
       aria-haspopup="menu" aria-expanded={menu.open} aria-controls={menu.open ? menu.menuId : undefined} onClick={menu.toggle}>
-      {selected.label}<ChevronDown size={16} aria-hidden="true" />
+      <ArrowDownUp className="sort-icon" size={20} aria-hidden="true" />
+      <span className="sort-label">{selected.label}</span><ChevronDown className="sort-chevron" size={16} aria-hidden="true" />
     </button>
     {menu.open && <div className="sort-menu" id={menu.menuId} role="menu" aria-label="Ordenar libros" ref={menu.menuRef}>
       <span className="sort-menu-heading" aria-hidden="true">Ordenar por</span>

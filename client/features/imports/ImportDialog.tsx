@@ -121,6 +121,9 @@ export function ImportDialog({ target, onClose, onImported }: {
   const totals = results.reduce((sum, result) => ({
     added: sum.added + result.added, repeated: sum.repeated + result.repeated, incomplete: sum.incomplete + result.incomplete,
   }), { added: 0, repeated: 0, incomplete: 0 });
+  const importedBooks = new Set(results
+      .filter(result => result.status === 'success' && result.bookId !== null)
+      .map(result => result.bookId)).size;
   const selectedCount = files.length;
   const showingResults = busy || finished;
 
@@ -136,9 +139,9 @@ export function ImportDialog({ target, onClose, onImported }: {
           {target && <p className="import-target-notice" role="note"><CircleAlert size={16} aria-hidden="true" /><span>No se valida que los archivos correspondan a este libro.</span></p>}
           <input ref={input} type="file" accept=".html,.htm,text/html,application/xhtml+xml" multiple hidden aria-label="Seleccionar exportaciones HTML" onChange={event => { addFiles(Array.from(event.target.files || [])); event.target.value = ''; }} />
           <div className={'drop-zone' + (dragging ? ' is-dragging' : '')}
-            onDragOver={event => { event.preventDefault(); setDragging(true); }}
-            onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
-            onDrop={handleDrop}>
+           onDragOver={event => { event.preventDefault(); setDragging(true); }}
+           onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
+           onDrop={handleDrop}>
             <span className="upload-symbol"><Upload size={25} strokeWidth={1.5} /></span>
             <p>Arrastra aquí tus exportaciones o elige los archivos.</p>
             <button type="button" className="button button-outline" onClick={() => input.current?.click()}><Plus size={16} /> Seleccionar archivos</button>
@@ -159,6 +162,7 @@ export function ImportDialog({ target, onClose, onImported }: {
       ) : (
         <>
           <div className="import-summary" aria-live="polite">
+            <div><strong>{importedBooks.toLocaleString('es')}</strong><span>{importedBooks === 1 ? 'Libro' : 'Libros'}</span></div>
             <div><strong>{totals.added.toLocaleString('es')}</strong><span>{totals.added === 1 ? 'Anotación nueva' : 'Anotaciones nuevas'}</span></div>
             <div><strong>{totals.repeated.toLocaleString('es')}</strong><span>{totals.repeated === 1 ? 'Anotación repetida' : 'Anotaciones repetidas'}</span></div>
             {totals.incomplete > 0 && <div className="has-warning"><strong>{totals.incomplete.toLocaleString('es')}</strong><span>{totals.incomplete === 1 ? 'Anotación incompleta' : 'Anotaciones incompletas'}</span></div>}

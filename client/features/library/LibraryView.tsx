@@ -55,7 +55,7 @@ export function LibraryView({
         <button type="button" className="button button-primary main-import" onClick={onImport}><Plus size={18} /> Importar</button>
       </div>
       <div className="library-toolbar">
-        <label className="search-field library-search"><Search size={17} /><input type="search" placeholder="Buscar por título o autor…" aria-label="Buscar libros por título o autor" value={query} onChange={event => onQueryChange(event.target.value)} />{query && <button type="button" className="icon-button" aria-label="Limpiar búsqueda" onClick={() => onQueryChange('')}><X size={15} /></button>}</label>
+        <label className="search-field library-search"><Search size={17} /><input type="search" placeholder="Buscar título o autor…" aria-label="Buscar libros por título o autor" value={query} onChange={event => onQueryChange(event.target.value)} />{query && <button type="button" className="icon-button" aria-label="Limpiar búsqueda" onClick={() => onQueryChange('')}><X size={15} /></button>}</label>
         <BookSortMenu value={sort} onChange={onSortChange} />
       </div>
       {loadError && <div className="page-error" role="alert"><CircleAlert size={20} /><div><strong>No pudimos cargar tu biblioteca.</strong><p>{loadError}</p></div><button type="button" className="button button-outline" onClick={onRetry}>Reintentar</button></div>}
