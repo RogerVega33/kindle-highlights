@@ -5,6 +5,11 @@ services:
     image: kindle-highlights:local
     build: .
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     init: true
     environment:
       PGHOST: database
@@ -26,6 +31,11 @@ services:
   database:
     image: postgres:18
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_DB: ${PGDATABASE:?Define PGDATABASE antes de iniciar PostgreSQL.}
       POSTGRES_USER: ${PGUSER:?Define PGUSER antes de iniciar PostgreSQL.}

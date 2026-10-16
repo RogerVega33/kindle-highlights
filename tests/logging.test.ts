@@ -57,11 +57,11 @@ function assertPrivate(text: string) {
   }
 }
 
-test('cada petición registra inicio, respuesta, estado y duración con un ID propio', async t => {
+test('las peticiones de la aplicación registran inicio, respuesta, estado y duración con un ID propio', async t => {
   const { app, logs } = await fixture();
   t.after(() => app.close());
   const responses = await Promise.all([
-    app.inject({ url: `/api/health?token=${token}`, headers: { 'x-request-id': privateId } }),
+    app.inject({ url: `/api/auth/session?token=${token}`, headers: { 'x-request-id': privateId } }),
     app.inject({ url: `/api/books?query=${privateText}`, headers: { cookie: `kh_session=${token}` } }),
   ]);
   const entries = logs.records();
@@ -84,6 +84,60 @@ test('cada petición registra inicio, respuesta, estado y duración con un ID pr
     assert.ok(Number.isFinite(Date.parse(ending.time)));
   }
   assertPrivate(logs.text());
+});
+
+test('los healthchecks GET y HEAD exitosos conservan su ID sin escribir logs', async t => {
+  const { app, logs } = await fixture();
+  t.after(() => app.close());
+  for (const method of ['GET', 'HEAD'] as const) {
+    const response = await app.inject({ method, url: `/api/health?token=${token}`, headers: { 'x-request-id': privateId } });
+    assert.equal(response.statusCode, 200);
+    assert.match(String(response.headers['x-request-id']), /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/);
+  }
+  assert.deepEqual(logs.records(), []);
+});
+
+test('un error de health conserva el diagnóstico, la respuesta y su correlación sin datos privados', async t => {
+  const { app, logs } = await fixture();
+  t.after(() => app.close());
+  app.addHook('preHandler', async () => { throw new Error(password); });
+  const response = await app.inject('/api/health');
+  assert.equal(response.statusCode, 500);
+  const records = logs.records();
+  assert.deepEqual(records.map(record => record.event), ['http.request_failed', 'http.request_completed']);
+  assert.equal(records[0].level, 'error');
+  assert.deepEqual(records[0].error, { type: 'Error' });
+  assert.ok(records.every(record => record.reqId === response.headers['x-request-id']
+    && record.route === '/api/health' && record.statusCode === 500));
+  assertPrivate(logs.text());
+});
+
+test('una respuesta de health no exitosa también se registra sin lanzar una excepción', async t => {
+  const { app, logs } = await fixture();
+  t.after(() => app.close());
+  app.addHook('preHandler', async (_request, reply) => reply.code(503).send({ message: 'No disponible.' }));
+  const response = await app.inject('/api/health');
+  assert.equal(response.statusCode, 503);
+  const records = logs.records();
+  assert.equal(records.length, 1);
+  assert.equal(records[0].event, 'http.request_completed');
+  assert.equal(records[0].statusCode, 503);
+  assert.equal(records[0].reqId, response.headers['x-request-id']);
+});
+
+test('las rutas parecidas a health y los métodos distintos no se silencian', async t => {
+  const { app, logs } = await fixture();
+  t.after(() => app.close());
+  for (const request of [
+    { method: 'GET' as const, url: '/api/health-details' },
+    { method: 'POST' as const, url: '/api/health', headers: { 'x-requested-with': 'KindleHighlights' } },
+  ]) {
+    const response = await app.inject(request);
+    assert.equal(response.statusCode, 404);
+    const records = logs.records().filter(record => record.reqId === response.headers['x-request-id']);
+    assert.deepEqual(records.map(record => record.event), ['http.request_started', 'http.request_completed']);
+    assert.equal(records[1].statusCode, 404);
+  }
 });
 
 test('ni los cuerpos de autenticación, cookies, cabeceras ni respuestas de recuperación entran a los logs', async t => {

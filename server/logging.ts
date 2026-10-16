@@ -149,12 +149,18 @@ export function requestContext(request: FastifyRequest): Pick<LogDetails, 'metho
   return { method: request.method, route: request.routeOptions.url ?? 'unmatched' };
 }
 
+function isHealthCheck(request: FastifyRequest): boolean {
+  return request.routeOptions.url === '/api/health' && (request.method === 'GET' || request.method === 'HEAD');
+}
+
 export function registerRequestLogging(app: FastifyInstance): void {
   app.addHook('onRequest', async (request, reply) => {
     reply.header('X-Request-ID', request.id);
+    if (isHealthCheck(request)) return;
     request.log.info({ event: 'http.request_started', ...requestContext(request) });
   });
   app.addHook('onResponse', async (request, reply) => {
+    if (isHealthCheck(request) && reply.statusCode >= 200 && reply.statusCode < 300) return;
     request.log.info({ event: 'http.request_completed', ...requestContext(request), statusCode: reply.statusCode, durationMs: reply.elapsedTime });
   });
   app.addHook('onRequestAbort', async request => {
