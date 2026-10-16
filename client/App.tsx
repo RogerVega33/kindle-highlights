@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { CheckCircle2, CircleAlert, LoaderCircle, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CircleAlert, LoaderCircle, X } from 'lucide-react';
 import type { Book, PasswordChangeInput, User } from '../shared/types';
 import { MAX_COVER_BYTES } from '../shared/limits';
 import { libraryApi } from './api/library';
@@ -35,10 +35,19 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
   const coverInFlight = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  useEffect(() => {
+    setImportDialog(null);
+    setDeletingBook(null);
+    setPasswordDialog(false);
+    if (!library.bookId) headingRef.current?.focus({ preventScroll: true });
+  }, [library.bookId]);
+
   function backToLibrary() {
     library.backToLibrary();
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    window.setTimeout(() => headingRef.current?.focus(), 0);
+    if (!library.bookId) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      headingRef.current?.focus({ preventScroll: true });
+    }
   }
 
   function chooseCover(book: Book) {
@@ -48,7 +57,6 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
   }
 
   function openDeleteBookDialog(book: Book) {
-    library.cancelOpening();
     setDeletingBook(book);
   }
 
@@ -111,7 +119,6 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
   }
 
   function openImportDialog(target: Book | null) {
-    library.cancelOpening();
     setImportDialog({ target });
   }
 
@@ -120,15 +127,33 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
 
   return (
     <div className="app">
-      <a href="#main-content" className="skip-link">Saltar al contenido</a>
+      <a href="#main-content" className="skip-link" onClick={event => {
+        event.preventDefault();
+        const content = document.getElementById('main-content');
+        content?.focus({ preventScroll: true });
+        content?.scrollIntoView({ block: 'start' });
+      }}>Saltar al contenido</a>
       <SiteHeader theme={theme} onToggleTheme={onToggleTheme} onHome={backToLibrary} user={user} onLogout={onLogout} busy={busy}
-        onChangePassword={() => { library.cancelOpening(); setPasswordDialog(true); }} />
+        onChangePassword={() => setPasswordDialog(true)} />
       {sessionError && <div className="auth-error page-shell" role="alert"><p>{sessionError}</p>
         <button type="button" className="text-button" disabled={busy} onClick={onSessionRetry}>Reintentar sesión</button></div>}
 
       <div id="main-content" tabIndex={-1}>
         {selectedBook ? (
           <BookView key={selectedBook.id} book={selectedBook} loading={library.detailLoading} onBack={backToLibrary} onCover={chooseCover} onRemoveCover={book => void removeCover(book)} onImport={importBook} onCopy={text => void copyText(text)} onUpdate={library.applyAnnotationDelete} onAnnotationEdit={library.applyTextUpdate} onMetadataUpdate={library.applyMetadataUpdate} coverBusy={coverBusy} />
+        ) : library.bookId ? (
+          <main className="page-shell detail-page">
+            <button type="button" className="back-button" onClick={backToLibrary}><ArrowLeft size={17} /> Biblioteca</button>
+            {library.bookError ? <div className="page-error" role="alert">
+              <CircleAlert size={20} />
+              <div>
+                <strong>{library.bookError.notFound ? 'Este libro no está disponible' : 'No pudimos abrir el libro.'}</strong>
+                <p>{library.bookError.notFound ? 'No encontramos este libro en tu biblioteca. Revisa el enlace o vuelve a tus libros.' : library.bookError.message}</p>
+              </div>
+              <button type="button" className={library.bookError.notFound ? 'button button-primary book-unavailable-back' : 'button button-outline'} onClick={library.bookError.notFound ? backToLibrary : library.retryBook}>{library.bookError.notFound ? 'Volver a la biblioteca' : 'Reintentar'}</button>
+            </div>
+              : <div className="library-loading" role="status"><LoaderCircle size={26} className="spin" strokeWidth={1.5} /><span>Abriendo libro…</span></div>}
+          </main>
         ) : (
           <LibraryView books={library.books} page={library.page} pageSize={library.pageSize} totalBooks={library.totalBooks} totalAnnotations={library.totalAnnotations} matchingBooks={library.matchingBooks} totalPages={library.totalPages} loading={library.loading} loadError={library.loadError} headingRef={headingRef} query={library.query} sort={library.sort} onQueryChange={library.changeQuery} onSortChange={library.changeSort} onPageChange={library.changePage} onImport={() => openImportDialog(null)} onImportBook={importBook} onOpen={book => void library.openBook(book)} onCover={chooseCover} onDelete={openDeleteBookDialog} onRetry={() => void library.loadBooks()} />
         )}
@@ -140,7 +165,7 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
       {deletingBook && <DeleteBookDialog book={deletingBook} onClose={() => setDeletingBook(null)} onDeleted={removeBookFromLibrary} />}
       {passwordDialog && <ChangePasswordDialog onSave={onPasswordChange} onClose={() => setPasswordDialog(false)}
         onSaved={() => { setPasswordDialog(false); notify('Contraseña actualizada. Las demás sesiones se cerraron.'); }} />}
-      {(library.openingId || coverBusy) && <div className="activity-pill" role="status"><LoaderCircle size={15} className="spin" />{coverBusy ? 'Actualizando portada…' : 'Abriendo libro…'}</div>}
+      {coverBusy && <div className="activity-pill" role="status"><LoaderCircle size={15} className="spin" />Actualizando portada…</div>}
       {toast && <div className={'toast' + (toast.error ? ' toast-error' : '')} role={toast.error ? 'alert' : 'status'}>{toast.error ? <CircleAlert size={18} /> : <CheckCircle2 size={18} />}<span>{toast.message}</span><button type="button" aria-label="Cerrar aviso" onClick={dismissToast}><X size={15} /></button></div>}
     </div>
   );

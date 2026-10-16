@@ -103,10 +103,12 @@ test('las rutas estáticas extraídas conservan MIME, SPA y rechazo de enlaces s
   assert.equal(script.statusCode, 200);
   assert.match(String(script.headers['content-type']), /^text\/javascript/);
   assert.match(String((await app.inject('/assets/app.css')).headers['content-type']), /^text\/css/);
-  const page = await app.inject('/libros');
-  assert.equal(page.statusCode, 200);
-  assert.match(page.payload, /Interfaz sintética/);
-  assert.equal(page.headers['cache-control'], 'no-store');
+  for (const url of ['/libros', '/books/11111111-1111-4111-8111-111111111111']) {
+    const page = await app.inject(url);
+    assert.equal(page.statusCode, 200);
+    assert.match(page.payload, /Interfaz sintética/);
+    assert.equal(page.headers['cache-control'], 'no-store');
+  }
   const head = await app.inject({ method: 'HEAD', url: '/assets/app.js' });
   assert.equal(head.statusCode, 200);
   assert.equal(head.payload, '');

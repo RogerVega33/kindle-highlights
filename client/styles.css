@@ -569,6 +569,7 @@ input[type='search']::-webkit-search-cancel-button { -webkit-appearance: none; }
   .page-error > svg { width: 17px; }
   .page-error > div { flex-basis: calc(100% - 30px); }
   .page-error .button { margin-left: 27px; }
+  .page-error .book-unavailable-back { margin-inline: auto; max-width: 100%; }
   .detail-page { padding-top: 8px; padding-bottom: 40px; }
   .back-button { gap: 7px; }
   .detail-layout { display: block; margin-top: 8px; }

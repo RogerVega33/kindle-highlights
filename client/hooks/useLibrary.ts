@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Annotation, Book, BookDetail, BookListQuery, BookSort, BooksResponse } from '../../shared/types';
 import { BOOKS_PER_PAGE } from '../../shared/limits';
 import { libraryApi } from '../api/library';
+import { ApiError } from '../api/request';
 import { messageOf } from '../lib/format';
 import { readCurrent } from '../lib/current-read';
+import { bookIdFromPath, createBookNavigation } from '../lib/book-navigation';
 
 type Notify = (message: string, error?: boolean) => void;
 
@@ -19,14 +21,16 @@ export function useLibrary(notify: Notify) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<BookSort>('recent');
   const [selectedBook, setSelectedBook] = useState<BookDetail | null>(null);
+  const [bookId, setBookId] = useState<string | null>(() => typeof window === 'undefined' ? null : bookIdFromPath(window.location.pathname));
+  const [bookError, setBookError] = useState<{ message: string; notFound: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [openingId, setOpeningId] = useState<string | null>(null);
   const listSequence = useRef(0);
   const detailSequence = useRef(0);
   const mutationVersion = useRef(0);
   const selectedId = useRef<string | null>(null);
+  const navigation = useRef<ReturnType<typeof createBookNavigation> | null>(null);
   const listOptions = useRef<Required<BookListQuery>>({ page: 1, query: '', sort: 'recent' });
   const listController = useRef<AbortController | null>(null);
   const searchTimer = useRef<number | null>(null);
@@ -102,36 +106,52 @@ export function useLibrary(notify: Notify) {
 
   const cancelOpening = useCallback(() => {
     detailSequence.current++;
-    setOpeningId(null);
     setDetailLoading(false);
   }, []);
 
   const backToLibrary = useCallback(() => {
-    cancelOpening();
-    selectedId.current = null;
-    setSelectedBook(null);
-  }, [cancelOpening]);
+    navigation.current?.backToLibrary();
+  }, []);
 
-  const openBook = useCallback(async (book: Book) => {
+  const loadBook = useCallback(async (id: string) => {
     const sequence = ++detailSequence.current;
-    setOpeningId(book.id);
+    setBookError(null);
+    setDetailLoading(false);
     try {
       await readCurrent({
-        read: () => libraryApi.getBook(book.id),
+        read: () => libraryApi.getBook(id),
         isActive: () => sequence === detailSequence.current,
         version: () => mutationVersion.current,
         commit: detail => {
-          selectedId.current = book.id;
           setSelectedBook(detail);
           window.scrollTo({ top: 0, behavior: 'instant' });
         },
       });
     } catch (cause) {
-      if (sequence === detailSequence.current) notify(messageOf(cause), true);
-    } finally {
-      if (sequence === detailSequence.current) setOpeningId(null);
+      if (sequence === detailSequence.current) setBookError({ message: messageOf(cause), notFound: cause instanceof ApiError && cause.status === 404 });
     }
-  }, [notify]);
+  }, []);
+
+  useEffect(() => {
+    const controller = createBookNavigation(window, id => {
+      selectedId.current = id;
+      setBookId(id);
+      setSelectedBook(null);
+      setBookError(null);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      if (id) void loadBook(id);
+      else cancelOpening();
+    });
+    navigation.current = controller;
+    return () => {
+      controller.dispose();
+      navigation.current = null;
+      detailSequence.current++;
+    };
+  }, [loadBook, cancelOpening]);
+
+  const openBook = useCallback((book: Book) => { navigation.current?.openBook(book.id); }, []);
+  const retryBook = useCallback(() => { if (selectedId.current) void loadBook(selectedId.current); }, [loadBook]);
 
   async function refreshAfterImport() {
     mutationVersion.current++;
@@ -187,20 +207,18 @@ export function useLibrary(notify: Notify) {
 
   function removeBook(id: string) {
     mutationVersion.current++;
-    cancelOpening();
     setListing(previous => ({ ...previous, books: previous.books.filter(book => book.id !== id) }));
     if (selectedId.current === id) {
-      selectedId.current = null;
-      setSelectedBook(null);
+      navigation.current?.replaceWithLibrary();
     }
     void loadBooks();
     notify('Libro eliminado.');
   }
 
   return {
-    ...listing, query, sort, selectedBook, loading, detailLoading, loadError, openingId,
+    ...listing, query, sort, selectedBook, bookId, bookError, loading, detailLoading, loadError,
     changeQuery, changeSort, changePage,
-    loadBooks, openBook, cancelOpening, backToLibrary, refreshAfterImport,
+    loadBooks, openBook, retryBook, backToLibrary, refreshAfterImport,
     applyCoverUpdate, applyMetadataUpdate, applyAnnotationDelete, applyTextUpdate, removeBook,
   };
 }
