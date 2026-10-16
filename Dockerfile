@@ -13,6 +13,8 @@ COPY tests ./tests
 COPY public ./public
 COPY database/schema.sql ./database/schema.sql
 COPY scripts/copy-schema.mjs ./scripts/copy-schema.mjs
+COPY scripts/pwa.ts ./scripts/pwa.ts
+COPY pwa ./pwa
 RUN npm run build
 
 FROM node:22-bookworm-slim AS production-dependencies

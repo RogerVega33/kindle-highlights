@@ -35,7 +35,7 @@ async function sendBuildFile(filename: string, reply: FastifyReply, buildDirecto
       if (!(await handle.stat()).isFile()) throw new RepositoryError('No se encontró el recurso.', 404);
       return reply
         .type(STATIC_MIME[extname(filename)] || 'application/octet-stream')
-        .header('Cache-Control', filename === 'index.html' ? 'no-store' : 'public, max-age=3600')
+        .header('Cache-Control', ['index.html', 'sw.js', 'manifest.webmanifest'].includes(filename) ? 'no-store' : 'public, max-age=3600')
         .send(await handle.readFile());
     } finally {
       await handle.close();
@@ -52,7 +52,7 @@ export function registerStaticRoutes(app: FastifyInstance, buildDirectory = DIST
   app.get<{ Params: { '*': string } }>('/*', async (request, reply) => {
     const pathname = request.params['*'];
     if (pathname === 'api' || pathname.startsWith('api/') || pathname.split(/[\\/]/).some(part => part.startsWith('.'))) return reply.code(404).send({ message: 'No se encontró el recurso.' });
-    const asset = /^(?:assets\/[A-Za-z0-9_.-]+\.(?:js|css|png|jpe?g|webp|gif|svg|woff2?|ttf|ico)|[A-Za-z0-9_-]+\.(?:svg|png|ico)|manifest\.webmanifest)$/.test(pathname);
+    const asset = /^(?:assets\/[A-Za-z0-9_.-]+\.(?:js|css|png|jpe?g|webp|gif|svg|woff2?|ttf|ico)|[A-Za-z0-9_-]+\.(?:svg|png|ico)|manifest\.webmanifest|sw\.js)$/.test(pathname);
     if (asset) return sendBuildFile(pathname, reply, buildDirectory);
     if (extname(pathname)) return reply.code(404).send({ message: 'No se encontró el recurso.' });
     return sendBuildFile('index.html', reply, buildDirectory);

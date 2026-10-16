@@ -84,6 +84,8 @@ test('las rutas estáticas extraídas conservan MIME, SPA y rechazo de enlaces s
   await writeFile(join(directory, 'index.html'), '<html><body>Interfaz sintética</body></html>');
   await writeFile(join(directory, 'assets', 'app.js'), 'console.log("Archivo sintético");');
   await writeFile(join(directory, 'assets', 'app.css'), 'body { color: black; }');
+  await writeFile(join(directory, 'sw.js'), '// Worker sintético');
+  await writeFile(join(directory, 'manifest.webmanifest'), '{"name":"Aplicación ficticia"}');
   await writeFile(join(fixture, 'fuera.js'), 'Archivo sintético fuera del directorio público.');
   await symlink(join(fixture, 'fuera.js'), join(directory, 'assets', 'enlace.js'));
   const app = Fastify();
@@ -103,6 +105,12 @@ test('las rutas estáticas extraídas conservan MIME, SPA y rechazo de enlaces s
   assert.equal(script.statusCode, 200);
   assert.match(String(script.headers['content-type']), /^text\/javascript/);
   assert.match(String((await app.inject('/assets/app.css')).headers['content-type']), /^text\/css/);
+  for (const [url, mime] of [['/sw.js', /^text\/javascript/], ['/manifest.webmanifest', /^application\/manifest\+json/]] as const) {
+    const resource = await app.inject(url);
+    assert.equal(resource.statusCode, 200);
+    assert.match(String(resource.headers['content-type']), mime);
+    assert.equal(resource.headers['cache-control'], 'no-store');
+  }
   for (const url of ['/libros', '/books/11111111-1111-4111-8111-111111111111']) {
     const page = await app.inject(url);
     assert.equal(page.statusCode, 200);
@@ -112,7 +120,7 @@ test('las rutas estáticas extraídas conservan MIME, SPA y rechazo de enlaces s
   const head = await app.inject({ method: 'HEAD', url: '/assets/app.js' });
   assert.equal(head.statusCode, 200);
   assert.equal(head.payload, '');
-  for (const url of ['/api/no-existe', '/assets/app.js.map', '/assets/enlace.js', '/privado.txt']) {
+  for (const url of ['/api/no-existe', '/assets/app.js.map', '/assets/enlace.js', '/privado.txt', '/arbitrario.js', '/pwa/service-worker.js']) {
     assert.equal((await app.inject(url)).statusCode, 404);
   }
   assert.equal((await aliasApp.inject('/assets/app.js')).statusCode, 404);

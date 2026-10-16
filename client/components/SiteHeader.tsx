@@ -1,6 +1,7 @@
-import { BookOpen, KeyRound, LogOut, Moon, Sun } from 'lucide-react';
+import { Download, KeyRound, LogOut, Moon, Sun } from 'lucide-react';
 import type { User } from '../../shared/types';
 import { usePopupMenu } from '../hooks/usePopupMenu';
+import { usePwa } from '../pwa/PwaProvider';
 
 export interface SiteHeaderProps {
   theme: 'light' | 'dark';
@@ -14,9 +15,10 @@ export interface SiteHeaderProps {
 
 export function SiteHeader({ theme, onToggleTheme, onHome, user, onLogout, onChangePassword, busy }: SiteHeaderProps) {
   const menu = usePopupMenu();
+  const pwa = usePwa();
   return <header className="site-header"><div className="header-inner">
     <button type="button" className="brand" onClick={onHome} aria-label="Kindle highlights, inicio">
-      <span className="brand-mark"><BookOpen size={25} strokeWidth={1.35} /></span>
+      <span className="brand-mark"><img src="/favicon.svg" alt="" aria-hidden="true" width={44} height={44} /></span>
       <span><span className="brand-name">Kindle highlights</span><span className="brand-tagline">TU BIBLIOTECA PERSONAL DE SUBRAYADOS Y NOTAS</span></span>
     </button>
     <div className="header-actions">
@@ -30,6 +32,8 @@ export function SiteHeader({ theme, onToggleTheme, onHome, user, onLogout, onCha
         </button>
         {menu.open && <div className="account-menu" id={menu.menuId} role="menu" aria-label="Mi cuenta" ref={menu.menuRef}>
           <span className="account-menu-heading" aria-hidden="true">{user.username}</span>
+          {pwa.canInstall && <button type="button" role="menuitem" tabIndex={-1}
+            onClick={() => { menu.close(); void pwa.install(); }}><Download size={17} aria-hidden="true" />Instalar aplicación</button>}
           {onChangePassword && <button type="button" role="menuitem" tabIndex={-1} disabled={busy}
             onClick={() => { menu.close(); onChangePassword(); }}><KeyRound size={17} aria-hidden="true" />Cambiar contraseña</button>}
           {onLogout && <button type="button" role="menuitem" tabIndex={-1} disabled={busy}

@@ -3,10 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fbfaf7" />
+    <meta name="theme-color" content="#faf8f3" />
+    <meta name="color-scheme" content="light" />
+    <script>
+      (() => {
+        let theme = 'light';
+        try { theme = localStorage.getItem('margen-theme') === 'dark' ? 'dark' : 'light'; } catch {}
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#111925' : '#faf8f3';
+        document.querySelector('meta[name="color-scheme"]').content = theme;
+      })();
+    </script>
+    <meta name="apple-mobile-web-app-title" content="Kindle highlights" />
     <meta name="description" content="Tu biblioteca personal de subrayados y notas de Kindle." />
     <title>Kindle highlights · Tu biblioteca personal de subrayados y notas</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>

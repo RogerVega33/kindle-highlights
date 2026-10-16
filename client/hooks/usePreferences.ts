@@ -10,6 +10,9 @@ export function useTheme() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
+    const background = getComputedStyle(document.documentElement).getPropertyValue('--page').trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background);
+    document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', theme);
     try { localStorage.setItem(THEME_KEY, theme); }
     catch { /* A theme preference is optional. */ }
   }, [theme]);

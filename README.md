@@ -16,6 +16,7 @@ Tu biblioteca personal de subrayados y notas de Kindle.
 - **Copiar texto:** copia el contenido de un subrayado o nota al portapapeles.
 - **Modo claro y oscuro:** cambia de tema y conserva tu preferencia en el navegador.
 - **Diseño adaptable:** utiliza la biblioteca desde un computador, tableta o dispositivo móvil.
+- **PWA instalable:** instala la aplicación desde el navegador.
 - **Datos persistentes:** libros, anotaciones, ediciones y portadas se guardan en la base de datos y se conservan entre reinicios.
 
 ## Instalación
@@ -48,6 +49,16 @@ Para revisar los logs ejecuta:
 ```bash
 docker compose logs --follow app
 ```
+
+## PWA
+
+Puedes instalar la aplicación en tu dispositivo móvil desde el navegador una vez que esté desplegada en un servidor.
+
+- Abre la aplicación mediante HTTPS con un certificado reconocido por el dispositivo.
+- En los navegadores compatibles, abre el menú de tu cuenta y elige **Instalar aplicación**. También puedes utilizar la opción de instalación del navegador.
+- En iPhone o iPad, abre el menú **Compartir** del navegador y elige **Agregar a pantalla de inicio**.
+
+Consultar y modificar contenido requiere conexión con el servidor.
 
 ## Desarrollo
 

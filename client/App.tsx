@@ -18,6 +18,7 @@ import { ChangePasswordDialog } from './features/auth/ChangePasswordDialog';
 import { useAuth } from './hooks/useAuth';
 import { readImage } from './lib/files';
 import { messageOf } from './lib/format';
+import { PwaUpdateNotice } from './pwa/PwaProvider';
 
 function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, busy, theme, onToggleTheme, sessionError }: {
   user: User; onLogout: () => void; busy: boolean; theme: SiteHeaderProps['theme']; onToggleTheme: () => void; sessionError: string;
@@ -135,6 +136,7 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
       }}>Saltar al contenido</a>
       <SiteHeader theme={theme} onToggleTheme={onToggleTheme} onHome={backToLibrary} user={user} onLogout={onLogout} busy={busy}
         onChangePassword={() => setPasswordDialog(true)} />
+      <PwaUpdateNotice />
       {sessionError && <div className="auth-error page-shell" role="alert"><p>{sessionError}</p>
         <button type="button" className="text-button" disabled={busy} onClick={onSessionRetry}>Reintentar sesión</button></div>}
 
@@ -178,6 +180,7 @@ export default function App() {
     onSessionRetry={auth.retry} busy={auth.busy} theme={theme} onToggleTheme={toggleTheme} sessionError={auth.error} />;
   return <div className="app">
     <SiteHeader theme={theme} onToggleTheme={toggleTheme} onHome={() => window.scrollTo({ top: 0, behavior: 'instant' })} />
+    <PwaUpdateNotice />
     {auth.recovery ? <RecoveryPhraseView username={auth.recovery.username} phrase={auth.recovery.phrase} reason={auth.recovery.reason} onContinue={auth.finishRecovery} />
       : auth.checking ? <main className="auth-page page-shell" role="status"><LoaderCircle size={26} className="spin" /> Comprobando sesión…</main>
         : <AuthView busy={auth.busy} error={auth.error} onSubmit={auth.authenticate} onRecover={auth.recover} onClearError={auth.clearError} />}
