@@ -5,6 +5,7 @@ import type { Book, ImportFile, ImportResult } from '../../../shared/types';
 import { MAX_HTML_BYTES } from '../../../shared/limits';
 import { libraryApi } from '../../api/library';
 import { Modal } from '../../components/Modal';
+import { ErrorNotice } from '../../components/ErrorNotice';
 import { messageOf, plural } from '../../lib/format';
 
 function ResultRow({ result }: { result: ImportResult }) {
@@ -156,7 +157,7 @@ export function ImportDialog({ target, onClose, onImported }: {
             </div>)}</div>
           </div>}
           <p className="import-assurance"><Check size={15} /> {target ? 'Conservaremos lo existente y añadiremos solo tus nuevas anotaciones.' : 'Si vuelves a importar un libro, conservaremos lo existente y añadiremos solo sus nuevas anotaciones.'}</p>
-          {error && <div className="inline-error preserve-lines" role="alert"><CircleAlert size={18} /><span>{error}</span></div>}
+          {error && <ErrorNotice compact className="inline-error preserve-lines" message={error} />}
           <div className="modal-footer"><button type="button" className="button button-quiet" onClick={onClose}>Cancelar</button><button type="button" className="button button-primary" disabled={!selectedCount} onClick={() => void startImport()}><Upload size={17} /> Importar{selectedCount > 0 ? ' ' + plural(selectedCount, 'archivo', 'archivos') : ''}</button></div>
         </>
       ) : (

@@ -5,6 +5,7 @@ import type { Book, PasswordChangeInput, User } from '../shared/types';
 import { MAX_COVER_BYTES } from '../shared/limits';
 import { libraryApi } from './api/library';
 import { SiteFooter } from './components/SiteFooter';
+import { ErrorNotice } from './components/ErrorNotice';
 import { BookView } from './features/books/BookView';
 import { DeleteBookDialog } from './features/books/DeleteBookDialog';
 import { ImportDialog } from './features/imports/ImportDialog';
@@ -13,6 +14,7 @@ import { useLibrary } from './hooks/useLibrary';
 import { useTheme, useToast } from './hooks/usePreferences';
 import { SiteHeader, type SiteHeaderProps } from './components/SiteHeader';
 import { AuthView } from './features/auth/AuthView';
+import { SessionUnavailableView } from './features/auth/SessionUnavailableView';
 import { RecoveryPhraseView } from './features/auth/RecoveryPhraseView';
 import { ChangePasswordDialog } from './features/auth/ChangePasswordDialog';
 import { useAuth } from './hooks/useAuth';
@@ -137,8 +139,8 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
       <SiteHeader theme={theme} onToggleTheme={onToggleTheme} onHome={backToLibrary} user={user} onLogout={onLogout} busy={busy}
         onChangePassword={() => setPasswordDialog(true)} />
       <PwaUpdateNotice />
-      {sessionError && <div className="auth-error page-shell" role="alert"><p>{sessionError}</p>
-        <button type="button" className="text-button" disabled={busy} onClick={onSessionRetry}>Reintentar sesión</button></div>}
+      {sessionError && <div className="page-shell"><ErrorNotice title="Revisa tu sesión" message={sessionError}
+        action={{ label: 'Reintentar sesión', onClick: onSessionRetry, disabled: busy }} /></div>}
 
       <div id="main-content" tabIndex={-1}>
         {selectedBook ? (
@@ -146,14 +148,10 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
         ) : library.bookId ? (
           <main className="page-shell detail-page">
             <button type="button" className="back-button" onClick={backToLibrary}><ArrowLeft size={17} /> Biblioteca</button>
-            {library.bookError ? <div className="page-error" role="alert">
-              <CircleAlert size={20} />
-              <div>
-                <strong>{library.bookError.notFound ? 'Este libro no está disponible' : 'No pudimos abrir el libro.'}</strong>
-                <p>{library.bookError.notFound ? 'No encontramos este libro en tu biblioteca. Revisa el enlace o vuelve a tus libros.' : library.bookError.message}</p>
-              </div>
-              <button type="button" className={library.bookError.notFound ? 'button button-primary book-unavailable-back' : 'button button-outline'} onClick={library.bookError.notFound ? backToLibrary : library.retryBook}>{library.bookError.notFound ? 'Volver a la biblioteca' : 'Reintentar'}</button>
-            </div>
+            {library.bookError ? <ErrorNotice
+              title={library.bookError.notFound ? 'Este libro no está disponible' : 'No pudimos abrir el libro.'}
+              message={library.bookError.notFound ? 'No encontramos este libro en tu biblioteca. Revisa el enlace o vuelve a tus libros.' : library.bookError.message}
+              action={{ label: library.bookError.notFound ? 'Volver a la biblioteca' : 'Reintentar', onClick: library.bookError.notFound ? backToLibrary : library.retryBook }} />
               : <div className="library-loading" role="status"><LoaderCircle size={26} className="spin" strokeWidth={1.5} /><span>Abriendo libro…</span></div>}
           </main>
         ) : (
@@ -178,6 +176,8 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
   if (auth.user && !auth.checking && !auth.recovery) return <LibraryWorkspace key={auth.user.id} user={auth.user} onLogout={auth.logout} onPasswordChange={auth.changePassword}
     onSessionRetry={auth.retry} busy={auth.busy} theme={theme} onToggleTheme={toggleTheme} sessionError={auth.error} />;
+  if (!auth.user && auth.sessionUnavailable && !auth.recovery) return <SessionUnavailableView theme={theme} onToggleTheme={toggleTheme}
+    message={auth.error} checking={auth.checking} onRetry={auth.retry} />;
   return <div className="app">
     <SiteHeader theme={theme} onToggleTheme={toggleTheme} onHome={() => window.scrollTo({ top: 0, behavior: 'instant' })} />
     <PwaUpdateNotice />

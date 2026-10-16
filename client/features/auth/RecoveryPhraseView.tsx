@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, Copy, KeyRound } from 'lucide-react';
+import { ErrorNotice } from '../../components/ErrorNotice';
 
 export function RecoveryPhraseView({ username, phrase, reason, onContinue }: {
   username: string; phrase: string; reason: 'register' | 'recover'; onContinue: () => void;
@@ -29,7 +30,7 @@ export function RecoveryPhraseView({ username, phrase, reason, onContinue }: {
       <button type="button" className="text-button recovery-copy" onClick={() => void copy()}>
         {copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'Palabras copiadas' : 'Copiar palabras'}
       </button>
-      {copyError && <p className="auth-error" role="alert">{copyError}</p>}
+      {copyError && <ErrorNotice compact message={copyError} />}
       <p className="recovery-notice">Solo se muestran esta vez. {reason === 'recover' && 'Estas palabras reemplazan las anteriores. '}Guárdalas en un lugar privado; permiten recuperar tu cuenta.</p>
       <form onSubmit={event => { event.preventDefault(); if (saved) onContinue(); }}>
         <label className="recovery-confirmation"><input type="checkbox" required checked={saved} onChange={event => setSaved(event.target.checked)} />

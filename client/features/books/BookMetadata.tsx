@@ -4,6 +4,7 @@ import { Check, LoaderCircle, Pencil } from 'lucide-react';
 import type { Book } from '../../../shared/types';
 import { MAX_BOOK_AUTHOR_LENGTH, MAX_BOOK_TITLE_LENGTH } from '../../../shared/limits';
 import { libraryApi } from '../../api/library';
+import { ErrorNotice } from '../../components/ErrorNotice';
 import { messageOf } from '../../lib/format';
 
 export function BookMetadata({ book, headingRef, onUpdated }: {
@@ -74,7 +75,7 @@ export function BookMetadata({ book, headingRef, onUpdated }: {
         <form className="book-metadata-form" aria-label="Editar título y autor" aria-busy={busy} onSubmit={event => void saveMetadata(event)} onKeyDown={handleKeyDown}>
           <label>Título<textarea ref={titleInput} rows={3} required maxLength={MAX_BOOK_TITLE_LENGTH} disabled={busy} value={draft.title} aria-describedby={error ? errorId : undefined} onChange={event => { const value = event.target.value; setDraft(previous => ({ ...previous, title: value })); setError(''); }} /></label>
           <label>Autor<input type="text" maxLength={MAX_BOOK_AUTHOR_LENGTH} disabled={busy} value={draft.author} placeholder="Autor desconocido" onChange={event => { const value = event.target.value; setDraft(previous => ({ ...previous, author: value })); setError(''); }} /></label>
-          {error && <p className="book-metadata-error" id={errorId} role="alert">{error}</p>}
+          {error && <ErrorNotice compact id={errorId} message={error} />}
           <div className="book-metadata-actions">
             <button type="button" className="button button-quiet" disabled={busy} onClick={finishEditing}>Cancelar</button>
             <button type="submit" className="button button-primary" disabled={busy}>{busy ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />} Guardar</button>

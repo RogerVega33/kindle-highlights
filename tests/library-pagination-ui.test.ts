@@ -96,6 +96,8 @@ test('la carga desactiva toda navegación y los errores no conservan tarjetas de
   const failed = renderLibrary({ loadError: 'Error de prueba' });
   assert.equal(failed('.book-card').length, 0);
   assert.equal(failed('.page-error[role="alert"]').length, 1);
+  assert.equal(failed('.error-notice-action.button-primary').text(), 'Reintentar');
+  assert.equal(failed('.error-notice-action.button-outline').length, 0);
   assert.equal(failed('.pagination-controls').length, 0);
   assert.equal(failed('.empty-library').length, 0);
 });

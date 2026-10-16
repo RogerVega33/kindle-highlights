@@ -6,6 +6,7 @@ import { MAX_ANNOTATION_TEXT_LENGTH } from '../../../shared/limits';
 import { libraryApi } from '../../api/library';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { Modal } from '../../components/Modal';
+import { ErrorNotice } from '../../components/ErrorNotice';
 import { messageOf, positionLabel } from '../../lib/format';
 
 export function EditAnnotationDialog({ annotation, onClose, onSaved, returnFocusFallbackRef }: {
@@ -41,7 +42,7 @@ export function EditAnnotationDialog({ annotation, onClose, onSaved, returnFocus
     <Modal title={annotation.kind === 'note' ? 'Editar nota' : 'Editar subrayado'} description="Se conservarán el texto original y la última edición." onClose={() => { if (!busy) onClose(); }} className="edit-annotation-modal" initialFocusRef={input} returnFocusFallbackRef={returnFocusFallbackRef}>
       <form className="annotation-edit-form" onSubmit={event => void save(event)} aria-busy={busy}>
         <label>Texto<textarea ref={input} rows={10} required maxLength={MAX_ANNOTATION_TEXT_LENGTH} disabled={busy} value={text} aria-describedby={error ? errorId : undefined} onChange={event => { setText(event.target.value); setError(''); }} /></label>
-        {error && <p className="annotation-edit-error" id={errorId} role="alert">{error}</p>}
+        {error && <ErrorNotice compact id={errorId} message={error} />}
         <div className="modal-footer">
           <button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Cancelar</button>
           <button type="submit" className="button button-primary" disabled={busy}>{busy ? <LoaderCircle size={16} className="spin" /> : <Check size={16} />} Guardar</button>

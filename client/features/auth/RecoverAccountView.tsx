@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import type { RecoveryCredentials } from '../../../shared/types';
 import { HelpLabel } from './HelpLabel';
+import { ErrorNotice } from '../../components/ErrorNotice';
 import { MAX_PASSWORD_LENGTH, MAX_RECOVERY_PHRASE_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, MIN_USERNAME_LENGTH, RECOVERY_WORD_COUNT } from '../../../shared/limits';
 
 export function RecoverAccountView({ busy, error, username: initialUsername, onSubmit, onBack }: {
@@ -82,7 +83,7 @@ export function RecoverAccountView({ busy, error, username: initialUsername, onS
             </button>
           </div>
         </div>
-        {(localError || error) && <p className="auth-error" role="alert">{localError || error}</p>}
+        {(localError || error) && <ErrorNotice compact message={localError || error} />}
         <button type="submit" className="button button-primary" disabled={busy}>
           {busy ? <LoaderCircle size={18} className="spin" /> : <ArrowRight size={18} />}Cambiar contraseña
         </button>

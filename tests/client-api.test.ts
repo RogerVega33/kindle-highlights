@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { type TestContext } from 'node:test';
 import { libraryApi } from '../client/api/library.js';
+import { ApiError } from '../client/api/request.js';
 import type { Annotation, Book, BookDetail, BooksResponse, ImportFile, ImportResult } from '../shared/types.js';
 
 const bookId = 'libro/a ?#ñ';
@@ -131,7 +132,7 @@ test('borrar anotaciones, portadas y libros usa sus rutas codificadas y devuelve
   assert.ok(calls.every(({ init }) => init?.body === undefined));
 });
 
-test('los errores del backend, respuestas ilegibles y fallos de red llegan al consumidor sin ocultarse', async (t) => {
+test('los errores HTTP conservan sus mensajes y los fallos de red usan un texto comprensible', async (t) => {
   let respond = async (): Promise<Response> => Response.json({ message: 'El libro ya no existe.' }, { status: 404 });
   t.mock.method(globalThis, 'fetch', async () => respond());
 
@@ -148,7 +149,22 @@ test('los errores del backend, respuestas ilegibles y fallos de red llegan al co
   await assert.rejects(libraryApi.listBooks(), {
     name: 'Error', message: 'No pudimos leer la respuesta. Inténtalo de nuevo.',
   });
-  const networkError = new TypeError('Fallo de red ficticio.');
+  const networkError = new TypeError('Failed to fetch');
   respond = async () => { throw networkError; };
-  await assert.rejects(libraryApi.listBooks(), (error) => error === networkError);
+  await assert.rejects(libraryApi.listBooks(), error => {
+    assert.ok(error instanceof ApiError);
+    assert.equal(error.status, 0);
+    assert.equal(error.message, 'No pudimos conectar con el servidor. Inténtalo de nuevo en unos momentos.');
+    assert.equal(error.cause, networkError);
+    return true;
+  });
+});
+
+test('cancelar una solicitud no se convierte en un aviso de fallo de conexión', async t => {
+  const cancellation = new DOMException('Solicitud ficticia cancelada.', 'AbortError');
+  t.mock.method(globalThis, 'fetch', async () => { throw cancellation; });
+  await assert.rejects(libraryApi.getBook(bookId), error => error === cancellation);
+  const controller = new AbortController();
+  controller.abort(cancellation);
+  await assert.rejects(libraryApi.getBook(bookId, controller.signal), error => error === cancellation);
 });

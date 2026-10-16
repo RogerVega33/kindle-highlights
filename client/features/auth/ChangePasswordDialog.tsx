@@ -4,6 +4,7 @@ import { Check, Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import type { PasswordChangeInput } from '../../../shared/types';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../../../shared/limits';
 import { Modal } from '../../components/Modal';
+import { ErrorNotice } from '../../components/ErrorNotice';
 import { messageOf } from '../../lib/format';
 import { HelpLabel } from './HelpLabel';
 
@@ -65,7 +66,7 @@ export function ChangePasswordDialog({ onSave, onClose, onSaved }: {
           </button>
         </div>
       </div>)}
-      {error && <p className="auth-error" id={`${id}-error`} role="alert">{error}</p>}
+      {error && <ErrorNotice compact id={`${id}-error`} message={error} />}
       <div className="modal-footer">
         <button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Cancelar</button>
         <button type="submit" className="button button-primary" disabled={busy}>

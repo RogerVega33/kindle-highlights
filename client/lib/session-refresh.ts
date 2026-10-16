@@ -7,10 +7,11 @@ interface SessionRefreshOptions {
   isCurrent: () => boolean;
   onSession: (user: User | null) => void;
   onError: (message: string) => void;
+  onUnavailable?: () => void;
 }
 
 /** A failed check does not establish that the existing session has ended. */
-export async function refreshSession({ signal, isCurrent, onSession, onError }: SessionRefreshOptions): Promise<void> {
+export async function refreshSession({ signal, isCurrent, onSession, onError, onUnavailable }: SessionRefreshOptions): Promise<void> {
   try {
     const session = await authApi.session(signal);
     const user = session.user;
@@ -27,6 +28,7 @@ export async function refreshSession({ signal, isCurrent, onSession, onError }: 
       onSession(null);
       onError('Tu sesión terminó. Inicia sesión de nuevo.');
     } else {
+      onUnavailable?.();
       onError('No pudimos comprobar tu sesión. Inténtalo de nuevo en unos momentos.');
     }
   }
