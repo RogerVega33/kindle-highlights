@@ -38,7 +38,7 @@ test('los avisos compactos conservan la identidad visual y el identificador acce
 test('los errores de acceso y recuperación usan el mismo aviso dentro de sus formularios', () => {
   const message = 'No pudimos conectar con el servidor. Inténtalo de nuevo en unos momentos.';
   const views = [
-    createElement(AuthView, { busy: false, error: message, onSubmit: async () => {}, onRecover: async () => {}, onClearError() {} }),
+    createElement(AuthView, { action: 'login', onNavigate() {}, busy: false, error: message, onSubmit: async () => {}, onRecover: async () => {}, onClearError() {} }),
     createElement(RecoverAccountView, { busy: false, error: message, username: 'Lectora', onSubmit: async () => {}, onBack() {} }),
   ];
   for (const view of views) {

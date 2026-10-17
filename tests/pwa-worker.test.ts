@@ -80,12 +80,14 @@ test('autenticación, datos privados, escrituras, recursos ajenos y archivos des
   assert.equal(worker.cached.size, 0);
 });
 
-test('una navegación sin red recupera la interfaz conservando la URL del libro y sin emitir mensajes', async () => {
+test('una navegación sin red recupera la interfaz conservando las URL de libros y acceso, sin emitir mensajes', async () => {
   const worker = fixture();
   worker.cached.set('/', new Response('interfaz pública ficticia'));
   worker.setNetwork(async () => { throw new TypeError('Sin red ficticia'); });
-  const response = await worker.request('/books/ficticio', 'navigate');
-  assert.equal(await response!.text(), 'interfaz pública ficticia');
+  for (const path of ['/books/ficticio', '/login', '/register', '/recover']) {
+    const response = await worker.request(path, 'navigate');
+    assert.equal(await response!.text(), 'interfaz pública ficticia');
+  }
   assert.equal(worker.cached.size, 1);
   const empty = fixture();
   empty.setNetwork(async () => { throw new TypeError('Sin red ficticia'); });

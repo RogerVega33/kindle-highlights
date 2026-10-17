@@ -9,9 +9,10 @@ import { authApi } from '../client/api/auth.js';
 import { RecoverAccountView } from '../client/features/auth/RecoverAccountView.js';
 import { RecoveryPhraseView } from '../client/features/auth/RecoveryPhraseView.js';
 import { ChangePasswordDialog } from '../client/features/auth/ChangePasswordDialog.js';
+import { authScreenFromPath } from '../client/lib/auth-navigation.js';
 
 test('el formulario de acceso usa campos de contraseña y autocompletado apropiado', () => {
-  const html = load(renderToStaticMarkup(createElement(AuthView, { busy: false, error: '', onSubmit: async () => {}, onRecover: async () => {}, onClearError() {} })));
+  const html = load(renderToStaticMarkup(createElement(AuthView, { action: 'login', onNavigate() {}, busy: false, error: '', onSubmit: async () => {}, onRecover: async () => {}, onClearError() {} })));
   assert.equal(html('input[name="username"]').attr('autocomplete'), 'username');
   assert.equal(html('input[name="password"]').attr('type'), 'password');
   assert.equal(html('input[name="password"]').attr('autocomplete'), 'current-password');
@@ -32,6 +33,25 @@ test('la cabecera ofrece el menú de la cuenta únicamente cuando hay un usuario
   const anonymous = load(renderToStaticMarkup(createElement(SiteHeader, { theme: 'light', onHome() {}, onToggleTheme() {} })));
   assert.equal(anonymous('.account-user').length, 0);
   assert.equal(anonymous('button[aria-label="Cerrar sesión"]').length, 0);
+});
+
+test('cada URL de acceso restaura su formulario con el título y los campos correspondientes', () => {
+  for (const [path, title, passwordMode] of [
+    ['/login', 'Iniciar sesión', 'current-password'],
+    ['/register', 'Crear cuenta', 'new-password'],
+    ['/recover', 'Recuperar cuenta', 'new-password'],
+  ]) {
+    const action = authScreenFromPath(path);
+    assert.ok(action);
+    const html = load(renderToStaticMarkup(createElement(AuthView, {
+      action, onNavigate() {}, busy: false, error: '', onSubmit: async () => {}, onRecover: async () => {}, onClearError() {},
+    })));
+    assert.equal(html('h1').text(), title);
+    assert.equal(html('h1').attr('tabindex'), '-1');
+    assert.equal(html('input[name="password"]').attr('autocomplete'), passwordMode);
+    assert.equal(html('input[name="confirmation"]').length, action === 'login' ? 0 : 1);
+    assert.equal(html('input[name="recoveryPhrase"]').length, action === 'recover' ? 1 : 0);
+  }
 });
 
 test('el cliente de autenticación envía cookies y cabecera de protección sin incluir credenciales en la URL', async t => {

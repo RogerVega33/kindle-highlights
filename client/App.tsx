@@ -18,6 +18,7 @@ import { SessionUnavailableView } from './features/auth/SessionUnavailableView';
 import { RecoveryPhraseView } from './features/auth/RecoveryPhraseView';
 import { ChangePasswordDialog } from './features/auth/ChangePasswordDialog';
 import { useAuth } from './hooks/useAuth';
+import { useAuthNavigation } from './hooks/useAuthNavigation';
 import { readImage } from './lib/files';
 import { messageOf } from './lib/format';
 import { PwaUpdateNotice } from './pwa/PwaProvider';
@@ -174,7 +175,8 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
 export default function App() {
   const auth = useAuth();
   const { theme, toggleTheme } = useTheme();
-  if (auth.user && !auth.checking && !auth.recovery) return <LibraryWorkspace key={auth.user.id} user={auth.user} onLogout={auth.logout} onPasswordChange={auth.changePassword}
+  const navigation = useAuthNavigation(auth.checking || auth.recovery || auth.sessionUnavailable ? 'pending' : auth.user ? 'authenticated' : 'guest', auth.clearError);
+  if (auth.user && !auth.checking && !auth.recovery && navigation.libraryReady) return <LibraryWorkspace key={auth.user.id} user={auth.user} onLogout={auth.logout} onPasswordChange={auth.changePassword}
     onSessionRetry={auth.retry} busy={auth.busy} theme={theme} onToggleTheme={toggleTheme} sessionError={auth.error} />;
   if (!auth.user && auth.sessionUnavailable && !auth.recovery) return <SessionUnavailableView theme={theme} onToggleTheme={toggleTheme}
     message={auth.error} checking={auth.checking} onRetry={auth.retry} />;
@@ -182,7 +184,7 @@ export default function App() {
     <SiteHeader theme={theme} onToggleTheme={toggleTheme} onHome={() => window.scrollTo({ top: 0, behavior: 'instant' })} />
     <PwaUpdateNotice />
     {auth.recovery ? <RecoveryPhraseView username={auth.recovery.username} phrase={auth.recovery.phrase} reason={auth.recovery.reason} onContinue={auth.finishRecovery} />
-      : auth.checking ? <main className="auth-page page-shell" role="status"><LoaderCircle size={26} className="spin" /> Comprobando sesión…</main>
-        : <AuthView busy={auth.busy} error={auth.error} onSubmit={auth.authenticate} onRecover={auth.recover} onClearError={auth.clearError} />}
+      : auth.checking || auth.user ? <main className="auth-page page-shell" role="status"><LoaderCircle size={26} className="spin" /> Comprobando sesión…</main>
+        : <AuthView action={navigation.screen} onNavigate={navigation.navigate} busy={auth.busy} error={auth.error} onSubmit={auth.authenticate} onRecover={auth.recover} onClearError={auth.clearError} />}
   </div>;
 }

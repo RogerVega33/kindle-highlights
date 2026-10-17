@@ -1,13 +1,14 @@
 import { useId, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, RefObject } from 'react';
 import { ArrowLeft, Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import type { RecoveryCredentials } from '../../../shared/types';
 import { HelpLabel } from './HelpLabel';
 import { ErrorNotice } from '../../components/ErrorNotice';
 import { MAX_PASSWORD_LENGTH, MAX_RECOVERY_PHRASE_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, MIN_USERNAME_LENGTH, RECOVERY_WORD_COUNT } from '../../../shared/limits';
 
-export function RecoverAccountView({ busy, error, username: initialUsername, onSubmit, onBack }: {
+export function RecoverAccountView({ busy, error, username: initialUsername, onSubmit, onBack, headingRef }: {
   busy: boolean; error: string; username: string; onSubmit: (credentials: RecoveryCredentials) => Promise<void>; onBack: () => void;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
 }) {
   const [username, setUsername] = useState(initialUsername);
   const [recoveryPhrase, setRecoveryPhrase] = useState('');
@@ -37,7 +38,7 @@ export function RecoverAccountView({ busy, error, username: initialUsername, onS
 
   return <main className="auth-page page-shell" id="main-content">
     <section className="auth-card" aria-labelledby={`${id}-title`}>
-      <h1 id={`${id}-title`}>Recuperar cuenta</h1>
+      <h1 ref={headingRef} id={`${id}-title`} tabIndex={-1}>Recuperar cuenta</h1>
       <p className="auth-description">Usa las palabras que guardaste al crear tu cuenta para elegir una contraseña nueva.</p>
       <form onSubmit={event => void submit(event)} aria-busy={busy}>
         <label htmlFor={`${id}-username`}>Usuario

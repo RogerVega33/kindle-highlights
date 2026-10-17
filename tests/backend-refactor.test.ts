@@ -112,7 +112,7 @@ test('las rutas estáticas extraídas conservan MIME, SPA y rechazo de enlaces s
     assert.match(String(resource.headers['content-type']), mime);
     assert.equal(resource.headers['cache-control'], 'no-store');
   }
-  for (const url of ['/libros', '/books/11111111-1111-4111-8111-111111111111']) {
+  for (const url of ['/libros', '/books/11111111-1111-4111-8111-111111111111', '/login', '/register', '/recover']) {
     const page = await app.inject(url);
     assert.equal(page.statusCode, 200);
     assert.match(page.payload, /Interfaz sintética/);
