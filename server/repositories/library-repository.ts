@@ -13,6 +13,7 @@ export interface LibraryRepository {
   updateBook(id: string, metadata: UpdateBookInput): Awaitable<Book>;
   deleteBook(id: string): Awaitable<void>;
   updateAnnotation(bookId: string, annotationId: string, text: string): Awaitable<Annotation>;
+  restoreAnnotation(bookId: string, annotationId: string): Awaitable<Annotation>;
   deleteAnnotation(bookId: string, annotationId: string): Awaitable<BookDetail>;
   importFiles(files: ImportFile[], bookId?: string): Awaitable<ImportResult[]>;
   setCover(id: string, dataUrl: string): Awaitable<Book>;

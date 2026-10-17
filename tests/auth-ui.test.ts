@@ -105,5 +105,5 @@ test('el diálogo de contraseña usa los tres ojos y la ayuda oculta del registr
     assert.equal(html('.auth-password-toggle').filter((_, element) => html(element).attr('aria-controls') === id).length, 1);
   }
   assert.equal(html('.auth-help-tooltip[hidden]').text(), 'Entre 12 y 128 caracteres.');
-  assert.equal(html('button[type="submit"]').text(), 'Guardar cambios');
+  assert.equal(html('button[type="submit"]').text(), 'Guardar');
 });

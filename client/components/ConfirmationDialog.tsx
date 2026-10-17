@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { LoaderCircle, Trash2 } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { messageOf } from '../lib/format';
 import { Modal } from './Modal';
 import { ErrorNotice } from './ErrorNotice';
@@ -43,7 +43,7 @@ export function ConfirmationDialog({ title, description, children, onConfirm, on
       <div className="modal-footer">
         <button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Cancelar</button>
         <button type="button" className="button button-danger" disabled={busy} aria-busy={busy} onClick={() => void confirm()}>
-          {busy ? <LoaderCircle size={16} className="spin" /> : <Trash2 size={16} />}{busy ? pendingLabel : actionLabel}
+          {busy && <LoaderCircle size={16} className="spin" />}{busy ? pendingLabel : actionLabel}
         </button>
       </div>
     </Modal>

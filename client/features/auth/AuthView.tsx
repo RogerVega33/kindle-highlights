@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ArrowRight, Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import type { Credentials, RecoveryCredentials } from '../../../shared/types';
 import { RecoverAccountView } from './RecoverAccountView';
 import { ErrorNotice } from '../../components/ErrorNotice';
@@ -65,7 +65,7 @@ export function AuthView({ busy, error, onSubmit, onRecover, onClearError }: {
             <button type="button" className="auth-password-toggle" disabled={busy} aria-label={showConfirmation ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'} aria-controls={confirmationId} onClick={() => setShowConfirmation(value => !value)}>{showConfirmation ? <EyeOff size={20} /> : <Eye size={20} />}</button>
           </div></div></>}
         {(localError || error) && <ErrorNotice compact id={errorId} message={localError || error} />}
-        <button type="submit" className="button button-primary" disabled={busy}>{busy ? <LoaderCircle size={18} className="spin" /> : <ArrowRight size={18} />}{registering ? 'Crear cuenta' : 'Iniciar sesión'}</button>
+        <button type="submit" className="button button-primary" disabled={busy}>{busy && <LoaderCircle size={18} className="spin" />}{registering ? 'Crear cuenta' : 'Iniciar sesión'}</button>
       </form>
       {!registering && <p className="auth-recover-link"><button type="button" className="text-button" disabled={busy}
         onClick={() => changeAction('recover')}>¿Olvidaste tu contraseña?</button></p>}

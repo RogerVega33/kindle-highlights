@@ -203,6 +203,7 @@ test('PostgreSQL: libros ajenos producen 404 antes de leer contenido o modificar
   const mutations = [
     (repository: PostgresRepository) => repository.updateBook(bookId, { title: 'Otro título', author: '' }),
     (repository: PostgresRepository) => repository.updateAnnotation(bookId, annotationId, 'Edición'),
+    (repository: PostgresRepository) => repository.restoreAnnotation(bookId, annotationId),
     (repository: PostgresRepository) => repository.deleteAnnotation(bookId, annotationId),
     (repository: PostgresRepository) => repository.setCover(bookId, png),
     (repository: PostgresRepository) => repository.deleteCover(bookId),
@@ -390,6 +391,35 @@ test('PostgreSQL: editar sólo reemplaza la última edición y volver al origina
   const missing = new ScriptedPool([begin(), lock(), { ...previous(before), rows: [] }, { sql: /^ROLLBACK$/ }]);
   await assert.rejects(new PostgresRepository(missing, userId).updateAnnotation(bookId, annotationId, 'Edición'), isNotFound);
   missing.done();
+});
+
+test('PostgreSQL: restaurar borra solo edited_text, admite original nulo y es idempotente', async () => {
+  for (const original_text of ['Texto original.\n\nCon párrafos.', null]) {
+    const before = annotationRow({ original_text });
+    const restored = annotationRow({ original_text, edited_text: null });
+    const previous = (rows: Record<string, unknown>[]): Step => ({
+      sql: /WHERE a\.id = \$1 AND a\.book_id = \$2 AND b\.user_id = \$3$/,
+      values: [annotationId, bookId, userId], rows,
+    });
+    const pool = new ScriptedPool([
+      begin(), lock(), previous([before]),
+      { sql: /SET edited_text = NULL, updated_at = clock_timestamp\(\)[\s\S]*a\.id = \$1 AND a\.book_id = \$2[\s\S]*b\.user_id = \$3/,
+        values: [annotationId, bookId, userId], rows: [restored],
+        inspect: sql => { assert.doesNotMatch(sql, /SET\s+original_text\s*=|fingerprint\s*=|DELETE FROM/); } },
+      touch(), commit(),
+      begin(), lock(), previous([restored]), commit(),
+      begin(), lock(), previous([]), { sql: /^ROLLBACK$/ },
+    ]);
+    const repository = new PostgresRepository(pool, userId);
+    const result = await repository.restoreAnnotation(bookId, annotationId);
+    assert.equal(result.text, original_text);
+    assert.equal(result.originalText, original_text);
+    assert.equal(result.edited, false);
+    assert.equal(result.id, annotationId);
+    assert.deepEqual(await repository.restoreAnnotation(bookId, annotationId), result);
+    await assert.rejects(repository.restoreAnnotation(bookId, annotationId), isNotFound);
+    pool.done(3);
+  }
 });
 
 test('PostgreSQL: eliminar devuelve conteos posteriores y el esquema elimina hijos por cascada', async () => {

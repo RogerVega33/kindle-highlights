@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Check, Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import type { PasswordChangeInput } from '../../../shared/types';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../../../shared/limits';
 import { Modal } from '../../components/Modal';
@@ -70,7 +70,7 @@ export function ChangePasswordDialog({ onSave, onClose, onSaved }: {
       <div className="modal-footer">
         <button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Cancelar</button>
         <button type="submit" className="button button-primary" disabled={busy}>
-          {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}{busy ? 'Guardando…' : 'Guardar cambios'}
+          {busy ? 'Guardando…' : 'Guardar'}
         </button>
       </div>
     </form>

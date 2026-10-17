@@ -1,6 +1,5 @@
 import { useId, useRef, useState } from 'react';
 import type { FormEvent, RefObject } from 'react';
-import { Check, LoaderCircle } from 'lucide-react';
 import type { Annotation, BookDetail } from '../../../shared/types';
 import { MAX_ANNOTATION_TEXT_LENGTH } from '../../../shared/limits';
 import { libraryApi } from '../../api/library';
@@ -45,18 +44,47 @@ export function EditAnnotationDialog({ annotation, onClose, onSaved, returnFocus
         {error && <ErrorNotice compact id={errorId} message={error} />}
         <div className="modal-footer">
           <button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Cancelar</button>
-          <button type="submit" className="button button-primary" disabled={busy}>{busy ? <LoaderCircle size={16} className="spin" /> : <Check size={16} />} Guardar</button>
+          <button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar'}</button>
         </div>
       </form>
     </Modal>
   );
 }
 
-export function OriginalAnnotationDialog({ annotation, onClose }: { annotation: Annotation; onClose: () => void }) {
+export function OriginalAnnotationDialog({ annotation, onClose, onRestored, returnFocusFallbackRef }: {
+  annotation: Annotation; onClose: () => void; onRestored: (annotation: Annotation) => void;
+  returnFocusFallbackRef: RefObject<HTMLElement | null>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const inFlight = useRef(false);
+
+  async function restore() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setError('');
+    try {
+      onRestored(await libraryApi.restoreAnnotation(annotation.bookId, annotation.id));
+    } catch (cause) {
+      setError(messageOf(cause));
+      inFlight.current = false;
+      setBusy(false);
+    }
+  }
+
   return (
-    <Modal title={annotation.kind === 'note' ? 'Nota original' : 'Subrayado original'} description={positionLabel(annotation) || 'Texto importado de Kindle.'} onClose={onClose} className="original-annotation-modal">
-      <p className="original-annotation-text" tabIndex={0}>{annotation.originalText ?? annotation.text}</p>
-      <div className="modal-footer"><button type="button" className="button button-primary" onClick={onClose}>Cerrar</button></div>
+    <Modal title={annotation.kind === 'note' ? 'Nota original' : 'Subrayado original'} description={positionLabel(annotation) || 'Texto importado de Kindle.'} onClose={() => { if (!inFlight.current) onClose(); }} className="original-annotation-modal" returnFocusFallbackRef={returnFocusFallbackRef}>
+      <div aria-busy={busy}>
+        <p className="original-annotation-text" tabIndex={0}>{annotation.originalText ?? 'Esta entrada no incluye texto en la exportación.'}</p>
+        {error && <ErrorNotice compact message={error} />}
+        <div className="modal-footer">
+          <button type="button" className={'button ' + (annotation.edited ? 'button-quiet' : 'button-primary')} disabled={busy} onClick={onClose}>Cerrar</button>
+          {annotation.edited && <button type="button" className="button button-primary" disabled={busy} onClick={() => void restore()}>
+            {busy ? 'Restaurando…' : 'Restaurar'}
+          </button>}
+        </div>
+      </div>
     </Modal>
   );
 }

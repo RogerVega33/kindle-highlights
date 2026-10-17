@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Check, Copy, KeyRound } from 'lucide-react';
+import { Check, Copy, KeyRound } from 'lucide-react';
 import { ErrorNotice } from '../../components/ErrorNotice';
 
 export function RecoveryPhraseView({ username, phrase, reason, onContinue }: {
@@ -36,7 +36,7 @@ export function RecoveryPhraseView({ username, phrase, reason, onContinue }: {
         <label className="recovery-confirmation"><input type="checkbox" required checked={saved} onChange={event => setSaved(event.target.checked)} />
           <span>Ya guardé mi usuario y las 8 palabras en orden.</span>
         </label>
-        <button type="submit" className="button button-primary" disabled={!saved}><ArrowRight size={18} />Ir a mi biblioteca</button>
+        <button type="submit" className="button button-primary" disabled={!saved}>Ir a mi biblioteca</button>
       </form>
     </section>
   </main>;

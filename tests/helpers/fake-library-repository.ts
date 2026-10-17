@@ -82,6 +82,18 @@ export class FakeLibraryRepository implements LibraryRepository {
     return { ...annotation };
   }
 
+  restoreAnnotation(bookId: string, annotationId: string): Annotation {
+    const stored = this.requireBook(bookId);
+    const annotation = stored.annotations.find(entry => entry.id === annotationId && entry.bookId === bookId);
+    if (!annotation) throw new RepositoryError('No se encontró la anotación en este libro.', 404);
+    if (annotation.edited) {
+      annotation.text = annotation.originalText;
+      annotation.edited = false;
+      this.touchBook(stored);
+    }
+    return { ...annotation };
+  }
+
   deleteAnnotation(bookId: string, annotationId: string): BookDetail {
     const stored = this.requireBook(bookId);
     const index = stored.annotations.findIndex(annotation => annotation.id === annotationId && annotation.bookId === bookId);

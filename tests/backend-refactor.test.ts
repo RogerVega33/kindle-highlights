@@ -27,6 +27,7 @@ test('las rutas permiten un repositorio asíncrono sin cambiar los contratos ni 
     updateBook: async (id, metadata) => fixture.updateBook(id, metadata),
     deleteBook: async id => fixture.deleteBook(id),
     updateAnnotation: async (bookId, annotationId, text) => fixture.updateAnnotation(bookId, annotationId, text),
+    restoreAnnotation: async (bookId, annotationId) => fixture.restoreAnnotation(bookId, annotationId),
     deleteAnnotation: async (bookId, annotationId) => fixture.deleteAnnotation(bookId, annotationId),
     importFiles: async (files, bookId) => fixture.importFiles(files, bookId),
     setCover: async (id, dataUrl) => fixture.setCover(id, dataUrl),

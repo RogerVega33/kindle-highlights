@@ -15,7 +15,7 @@ import { BookCoverMenu } from './BookCoverMenu';
 export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImport, onCopy, onUpdate, onAnnotationEdit, onMetadataUpdate, coverBusy }: {
   book: BookDetail; loading: boolean; onBack: () => void; onCover: (book: Book) => void;
   onRemoveCover: (book: Book) => void; onImport: (book: Book) => void; onCopy: (text: string) => void;
-  onUpdate: (book: BookDetail) => void; onAnnotationEdit: (annotation: Annotation) => void;
+  onUpdate: (book: BookDetail) => void; onAnnotationEdit: (annotation: Annotation, message?: string) => void;
   onMetadataUpdate: (book: Book) => void; coverBusy: boolean;
 }) {
   const [filter, setFilter] = useState<'all' | AnnotationKind>('all');
@@ -159,7 +159,10 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
         onAnnotationEdit(updated);
         setAnnotationDialog(null);
       }} />}
-      {annotationDialog?.kind === 'original' && <OriginalAnnotationDialog annotation={annotationDialog.annotation} onClose={() => setAnnotationDialog(null)} />}
+      {annotationDialog?.kind === 'original' && <OriginalAnnotationDialog annotation={annotationDialog.annotation} onClose={() => setAnnotationDialog(null)} returnFocusFallbackRef={title} onRestored={updated => {
+        onAnnotationEdit(updated, 'Anotación restaurada.');
+        setAnnotationDialog(null);
+      }} />}
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import type { RecoveryCredentials } from '../../../shared/types';
 import { HelpLabel } from './HelpLabel';
 import { ErrorNotice } from '../../components/ErrorNotice';
@@ -85,7 +85,7 @@ export function RecoverAccountView({ busy, error, username: initialUsername, onS
         </div>
         {(localError || error) && <ErrorNotice compact message={localError || error} />}
         <button type="submit" className="button button-primary" disabled={busy}>
-          {busy ? <LoaderCircle size={18} className="spin" /> : <ArrowRight size={18} />}Cambiar contraseña
+          {busy && <LoaderCircle size={18} className="spin" />}Cambiar contraseña
         </button>
       </form>
       <p className="auth-switch"><button type="button" className="text-button" disabled={busy} onClick={onBack}><ArrowLeft size={15} /> Volver a iniciar sesión</button></p>

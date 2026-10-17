@@ -28,7 +28,7 @@ type AnnotationRow = {
   id: string;
   book_id: string;
   kind: Annotation['kind'];
-  original_text: string;
+  original_text: string | null;
   edited_text: string | null;
   page: string | number | null;
   location: string | number | null;
@@ -209,6 +209,25 @@ export class PostgresRepository implements LibraryRepository {
         SET edited_text = NULLIF($4, a.original_text), updated_at = clock_timestamp()
         FROM books b WHERE a.id = $1 AND a.book_id = $2 AND b.id = a.book_id AND b.user_id = $3
         RETURNING ${ANNOTATION_COLUMNS}`, [annotationId, bookId, this.userId, text]);
+      await this.touchBook(client, bookId);
+      return toAnnotation(rows[0]);
+    });
+  }
+
+  async restoreAnnotation(bookId: string, annotationId: string): Promise<Annotation> {
+    requireUuid(bookId);
+    requireUuid(annotationId, 'No se encontró la anotación en este libro.');
+    return this.transaction(async client => {
+      await this.lockBook(client, bookId);
+      const { rows: previous } = await client.query<AnnotationRow>(`SELECT ${ANNOTATION_COLUMNS}
+        FROM annotations a JOIN books b ON b.id = a.book_id
+        WHERE a.id = $1 AND a.book_id = $2 AND b.user_id = $3`, [annotationId, bookId, this.userId]);
+      if (!previous[0]) throw new RepositoryError('No se encontró la anotación en este libro.', 404);
+      if (previous[0].edited_text === null) return toAnnotation(previous[0]);
+      const { rows } = await client.query<AnnotationRow>(`UPDATE annotations a
+        SET edited_text = NULL, updated_at = clock_timestamp()
+        FROM books b WHERE a.id = $1 AND a.book_id = $2 AND b.id = a.book_id AND b.user_id = $3
+        RETURNING ${ANNOTATION_COLUMNS}`, [annotationId, bookId, this.userId]);
       await this.touchBook(client, bookId);
       return toAnnotation(rows[0]);
     });

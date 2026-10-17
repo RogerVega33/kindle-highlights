@@ -53,6 +53,7 @@ test('la biblioteca, importación, anotaciones y portadas exigen sesión antes d
     { method: 'DELETE', url: '/api/books/otro/cover' },
     { method: 'PATCH', url: '/api/books/otro/annotations/ajena', payload: { text: 'Edición' } },
     { method: 'DELETE', url: '/api/books/otro/annotations/ajena' },
+    { method: 'DELETE', url: '/api/books/otro/annotations/ajena/edit' },
   ] as const) assert.equal((await app.inject({ ...entry, headers })).statusCode, 401);
   assert.equal(selected.length, 0);
   assert.deepEqual((await app.inject('/api/auth/session')).json(), { user: null });
@@ -92,6 +93,7 @@ test('dos usuarios no pueden leer ni modificar libros, anotaciones o portadas de
     { method: 'PUT', url: path + '/cover', payload: { dataUrl: 'ficticio' } }, { method: 'DELETE', url: path + '/cover' },
     { method: 'PATCH', url: path + '/annotations/' + annotation.id, payload: { text: 'Ajeno' } },
     { method: 'DELETE', url: path + '/annotations/' + annotation.id },
+    { method: 'DELETE', url: path + '/annotations/' + annotation.id + '/edit' },
     { method: 'POST', url: '/api/imports', payload: { files: [originalNotebook], bookId: id, userId: a.user.id } },
   ] as const) assert.equal((await app.inject({ ...entry, headers: { ...headers, cookie: b.cookie } })).statusCode, 404);
   assert.ok(selected.slice(start).every(id => id === b.user.id));

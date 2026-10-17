@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
-import { Check, CheckCircle2, CircleAlert, FileText, LoaderCircle, Plus, Upload, X } from 'lucide-react';
+import { CheckCircle2, CircleAlert, FileText, LoaderCircle, Upload, X } from 'lucide-react';
 import type { Book, ImportFile, ImportResult } from '../../../shared/types';
 import { MAX_HTML_BYTES } from '../../../shared/limits';
 import { libraryApi } from '../../api/library';
@@ -137,7 +137,7 @@ export function ImportDialog({ target, onClose, onImported }: {
     >
       {!showingResults ? (
         <>
-          {target && <p className="import-target-notice" role="note"><CircleAlert size={16} aria-hidden="true" /><span>No se valida que los archivos correspondan a este libro.</span></p>}
+          {target && <p className="import-target-notice" role="note"><CircleAlert size={16} aria-hidden="true" /><span>No se valida que las nuevas anotaciones correspondan a este libro.</span></p>}
           <input ref={input} type="file" accept=".html,.htm,text/html,application/xhtml+xml" multiple hidden aria-label="Seleccionar exportaciones HTML" onChange={event => { addFiles(Array.from(event.target.files || [])); event.target.value = ''; }} />
           <div className={'drop-zone' + (dragging ? ' is-dragging' : '')}
            onDragOver={event => { event.preventDefault(); setDragging(true); }}
@@ -145,7 +145,7 @@ export function ImportDialog({ target, onClose, onImported }: {
            onDrop={handleDrop}>
             <span className="upload-symbol"><Upload size={25} strokeWidth={1.5} /></span>
             <p>Arrastra aquí tus exportaciones o elige los archivos.</p>
-            <button type="button" className="button button-outline" onClick={() => input.current?.click()}><Plus size={16} /> Seleccionar archivos</button>
+            <button type="button" className="button button-outline" onClick={() => input.current?.click()}>Seleccionar archivos</button>
             <span className="file-hint">HTML o HTM · Hasta {MAX_HTML_BYTES / 1024 / 1024} MB por archivo</span>
           </div>
           {files.length > 0 && <div className="selected-files">
@@ -156,9 +156,9 @@ export function ImportDialog({ target, onClose, onImported }: {
               <button type="button" className="icon-button" aria-label={'Quitar ' + file.name} onClick={() => setFiles(previous => previous.filter((_, current) => current !== index))}><X size={16} /></button>
             </div>)}</div>
           </div>}
-          <p className="import-assurance"><Check size={15} /> {target ? 'Conservaremos lo existente y añadiremos solo tus nuevas anotaciones.' : 'Si vuelves a importar un libro, conservaremos lo existente y añadiremos solo sus nuevas anotaciones.'}</p>
+          <p className="import-assurance">{target ? 'Conservaremos lo existente y añadiremos solo tus nuevas anotaciones.' : 'Si vuelves a importar un libro, conservaremos lo existente y añadiremos solo sus nuevas anotaciones.'}</p>
           {error && <ErrorNotice compact className="inline-error preserve-lines" message={error} />}
-          <div className="modal-footer"><button type="button" className="button button-quiet" onClick={onClose}>Cancelar</button><button type="button" className="button button-primary" disabled={!selectedCount} onClick={() => void startImport()}><Upload size={17} /> Importar{selectedCount > 0 ? ' ' + plural(selectedCount, 'archivo', 'archivos') : ''}</button></div>
+          <div className="modal-footer"><button type="button" className="button button-quiet" onClick={onClose}>Cancelar</button><button type="button" className="button button-primary" disabled={!selectedCount} onClick={() => void startImport()}>Importar{selectedCount > 0 ? ' ' + plural(selectedCount, 'archivo', 'archivos') : ''}</button></div>
         </>
       ) : (
         <>
@@ -172,7 +172,7 @@ export function ImportDialog({ target, onClose, onImported }: {
           <div className="import-results">{results.map((result, index) => <ResultRow result={result} key={index} />)}</div>
           {totals.incomplete > 0 && <p className="result-footnote">Algunas entradas necesitan revisión. Consulta las observaciones de cada archivo.</p>}
           {finished && results.some(result => result.status === 'error') && <p className="result-footnote">Los archivos con errores no impiden importar los demás. Puedes volver a intentarlo con esos archivos.</p>}
-          <div className="modal-footer"><button type="button" className="button button-primary" disabled={busy} onClick={onClose}>{busy ? <><LoaderCircle size={16} className="spin" /> Importando…</> : <><Check size={17} /> Listo</>}</button></div>
+          <div className="modal-footer"><button type="button" className="button button-primary" disabled={busy} onClick={onClose}>{busy ? <><LoaderCircle size={16} className="spin" /> Importando…</> : 'Listo'}</button></div>
         </>
       )}
     </Modal>

@@ -116,6 +116,8 @@ export async function buildApp({ repositoryForUser, authentication, serveStatic 
   });
   app.delete<{ Params: { id: string; annotationId: string } }>('/api/books/:id/annotations/:annotationId', async request =>
     repository(request).deleteAnnotation(request.params.id, request.params.annotationId));
+  app.delete<{ Params: { id: string; annotationId: string } }>('/api/books/:id/annotations/:annotationId/edit', async request =>
+    repository(request).restoreAnnotation(request.params.id, request.params.annotationId));
 
   app.post<{ Reply: ImportResponse }>('/api/imports', async request => {
     const body = object(request.body);

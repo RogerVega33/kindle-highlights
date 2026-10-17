@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent, RefObject } from 'react';
-import { Check, LoaderCircle, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import type { Book } from '../../../shared/types';
 import { MAX_BOOK_AUTHOR_LENGTH, MAX_BOOK_TITLE_LENGTH } from '../../../shared/limits';
 import { libraryApi } from '../../api/library';
@@ -78,7 +78,7 @@ export function BookMetadata({ book, headingRef, onUpdated }: {
           {error && <ErrorNotice compact id={errorId} message={error} />}
           <div className="book-metadata-actions">
             <button type="button" className="button button-quiet" disabled={busy} onClick={finishEditing}>Cancelar</button>
-            <button type="submit" className="button button-primary" disabled={busy}>{busy ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />} Guardar</button>
+            <button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar'}</button>
           </div>
         </form>
       ) : <div className="sidebar-meta-heading">

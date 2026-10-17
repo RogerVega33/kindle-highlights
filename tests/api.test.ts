@@ -740,6 +740,40 @@ test('editar anotaciones valida el texto, rechaza IDs ajenos y conserva los dato
   assert.deepEqual((await app.inject({ method: 'GET', url: secondPath })).json<BookDetail>(), second);
 });
 
+test('restaurar descarta la edición de notas y subrayados y conserva la identidad al reimportar', async t => {
+  const app = await appFor(t);
+  const file = syntheticFile('<div class="noteHeading">Subrayado - Página 1</div><div class="noteText">Idea original.</div>'
+    + '<div class="noteHeading">Nota - Página 2</div><div class="noteText">Nota original.</div>');
+  const imported = (await app.inject({ method: 'POST', url: '/api/imports', payload: { files: [file] } }))
+    .json<{ results: ImportResult[] }>().results[0];
+  const path = `/api/books/${imported.bookId}`;
+  const original = (await app.inject(path)).json<BookDetail>();
+  assert.equal(original.annotations.length, 2);
+  for (const annotation of original.annotations) {
+    const url = `${path}/annotations/${annotation.id}`;
+    for (const text of ['Primera edición.', 'Última edición.']) {
+      assert.equal((await app.inject({ method: 'PATCH', url, payload: { text } })).statusCode, 200);
+    }
+    const restored = await app.inject({ method: 'DELETE', url: url + '/edit' });
+    assert.equal(restored.statusCode, 200);
+    assert.deepEqual(restored.json<Annotation>(), annotation);
+    const after = (await app.inject(path)).json<BookDetail>();
+    assert.deepEqual(after.annotations, original.annotations);
+    assert.equal(after.highlightCount, original.highlightCount);
+    assert.equal(after.noteCount, original.noteCount);
+    assert.ok(after.updatedAt > original.updatedAt);
+    assert.equal((await app.inject({ method: 'DELETE', url: url + '/edit' })).statusCode, 200);
+    assert.deepEqual((await app.inject(path)).json(), after);
+  }
+  const repeated = (await app.inject({ method: 'POST', url: '/api/imports', payload: { files: [file] } }))
+    .json<{ results: ImportResult[] }>().results[0];
+  assert.equal(repeated.added, 0);
+  assert.deepEqual((await app.inject(path)).json<BookDetail>().annotations, original.annotations);
+  for (const url of [`${path}/annotations/inexistente/edit`, `/api/books/inexistente/annotations/${original.annotations[0].id}/edit`]) {
+    assert.equal((await app.inject({ method: 'DELETE', url })).statusCode, 404);
+  }
+});
+
 test('un archivo incorrecto no impide procesar los demás del mismo lote', async (t) => {
   const app = await appFor(t);
   const good = originalNotebook;

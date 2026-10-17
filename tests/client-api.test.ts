@@ -132,6 +132,14 @@ test('borrar anotaciones, portadas y libros usa sus rutas codificadas y devuelve
   assert.ok(calls.every(({ init }) => init?.body === undefined));
 });
 
+test('restaurar elimina la edición con IDs codificados y sin reenviar el texto del cliente', async t => {
+  const calls = mockResponses(t, [annotation]);
+  assert.deepEqual(await libraryApi.restoreAnnotation(bookId, annotationId), annotation);
+  assert.equal(calls[0].url, annotationUrl + '/edit');
+  assert.equal(calls[0].init?.method, 'DELETE');
+  assert.equal(calls[0].init?.body, undefined);
+});
+
 test('los errores HTTP conservan sus mensajes y los fallos de red usan un texto comprensible', async (t) => {
   let respond = async (): Promise<Response> => Response.json({ message: 'El libro ya no existe.' }, { status: 404 });
   t.mock.method(globalThis, 'fetch', async () => respond());

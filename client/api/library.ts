@@ -36,6 +36,9 @@ export const libraryApi = {
   deleteAnnotation(bookId: string, id: string): Promise<BookDetail> {
     return request(annotationPath(bookId, id), { method: 'DELETE' });
   },
+  restoreAnnotation(bookId: string, id: string): Promise<Annotation> {
+    return request(annotationPath(bookId, id) + '/edit', { method: 'DELETE' });
+  },
   setCover(id: string, dataUrl: string): Promise<Book> {
     const payload: SetCoverInput = { dataUrl };
     return request(bookPath(id) + '/cover', { method: 'PUT', body: JSON.stringify(payload) });

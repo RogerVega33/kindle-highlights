@@ -196,12 +196,12 @@ export function useLibrary(notify: Notify) {
     notify('Anotación eliminada.');
   }
 
-  function applyTextUpdate(annotation: Annotation) {
+  function applyTextUpdate(annotation: Annotation, message = 'Anotación actualizada.') {
     mutationVersion.current++;
     setSelectedBook(previous => previous?.id === annotation.bookId ? {
       ...previous, annotations: previous.annotations.map(item => item.id === annotation.id ? annotation : item),
     } : previous);
-    notify('Anotación actualizada.');
+    notify(message);
     void loadBooks();
   }
 
