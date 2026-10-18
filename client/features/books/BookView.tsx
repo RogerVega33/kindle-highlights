@@ -18,9 +18,13 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
   onUpdate: (book: BookDetail) => void; onAnnotationEdit: (annotation: Annotation, message?: string) => void;
   onMetadataUpdate: (book: Book) => void; coverBusy: boolean;
 }) {
+  const annotations = useMemo(() => book.annotations.filter(annotation => annotation.kind === 'highlight' || annotation.kind === 'note'), [book.annotations]);
+  const sections = useMemo(() => groupAnnotations(annotations), [annotations]);
+  const chapterIds = useMemo(() => sections.filter(group => group.title).map(group => group.id), [sections]);
   const [filter, setFilter] = useState<'all' | AnnotationKind>('all');
   const [query, setQuery] = useState('');
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set());
+  const [smallScreen, setSmallScreen] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set(chapterIds));
   const [deletingAnnotation, setDeletingAnnotation] = useState<Annotation | null>(null);
   const [annotationDialog, setAnnotationDialog] = useState<{ kind: 'edit' | 'original'; annotation: Annotation } | null>(null);
   const [coverActionsVisible, setCoverActionsVisible] = useState(false);
@@ -28,9 +32,15 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
   const coverActionsTimer = useRef<number | null>(null);
   const sectionId = useId();
   const activeFilter = filter === 'highlight' || filter === 'note' ? filter : 'all';
-  const annotations = useMemo(() => book.annotations.filter(annotation => annotation.kind === 'highlight' || annotation.kind === 'note'), [book.annotations]);
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); }, []);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 600px)');
+    const update = () => setSmallScreen(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   useEffect(() => {
     setCoverActionsVisible(false);
     return () => {
@@ -45,8 +55,6 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
       (!search || searchable([annotation.text, annotation.sectionTitle, annotation.chapterTitle, positionLabel(annotation)].filter(Boolean).join(' ')).includes(search)),
     );
   }, [annotations, activeFilter, query]);
-  const sections = useMemo(() => groupAnnotations(annotations), [annotations]);
-  const chapterIds = useMemo(() => sections.filter(group => group.title).map(group => group.id), [sections]);
   const allChaptersCollapsed = chapterIds.length > 0 && chapterIds.every(id => collapsedSections.has(id));
   const groups = useMemo(() => {
     const visibleIds = new Set(visible.map(annotation => annotation.id));
@@ -125,7 +133,7 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
                 <ChevronsUpDown size={15} aria-hidden="true" /><span className="chapters-toggle-label">{allChaptersCollapsed ? 'Expandir todos' : 'Contraer todos'}</span>
               </button>}
             </div>
-            <label className="search-field annotation-search"><Search size={17} /><input type="search" placeholder="Buscar entre tus anotaciones…" value={query} onChange={event => setQuery(event.target.value)} aria-label="Buscar en las anotaciones" />{query && <button type="button" className="icon-button" aria-label="Limpiar búsqueda de anotaciones" onClick={() => setQuery('')}><X size={15} /></button>}</label>
+            <label className="search-field annotation-search"><Search size={17} /><input type="search" placeholder={smallScreen ? 'Buscar' : 'Buscar entre tus anotaciones…'} value={query} onChange={event => setQuery(event.target.value)} aria-label="Buscar en las anotaciones" />{query && <button type="button" className="icon-button" aria-label="Limpiar búsqueda de anotaciones" onClick={() => setQuery('')}><X size={15} /></button>}</label>
           </div>
           {loading && <div className="refreshing" role="status"><LoaderCircle size={14} className="spin" /> Actualizando anotaciones…</div>}
           <div className="annotation-groups">
@@ -136,8 +144,9 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
                 {group.title && <h3 className="section-title">
                   <button type="button" className="section-toggle" aria-expanded={!collapsed} aria-controls={contentId} onClick={() => toggleSection(group.id)}>
                     <ChevronDown size={20} className="section-chevron" aria-hidden="true" />
-                    <span className="section-label">{group.title}</span>
-                    <span className="section-count" aria-label={plural(group.annotations.length, 'anotación', 'anotaciones')}>{group.annotations.length}</span>
+                    <span className="section-label">{group.title.trimEnd()}{'\u00a0'}
+                      <span className="section-count" aria-label={plural(group.annotations.length, 'anotación', 'anotaciones')}>{group.annotations.length}</span>
+                    </span>
                   </button>
                 </h3>}
                 <div id={contentId} hidden={collapsed}>

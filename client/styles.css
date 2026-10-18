@@ -403,7 +403,7 @@ input[type='search']::-webkit-search-cancel-button { -webkit-appearance: none; }
 .section-chevron { flex-shrink: 0; color: var(--green); transition: transform .18s ease; }
 .section-toggle[aria-expanded='false'] .section-chevron { transform: rotate(-90deg); }
 .section-label { flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; }
-.section-count { flex-shrink: 0; min-width: 28px; padding: 3px 9px; border-radius: 999px; background: var(--green-pale); color: var(--green-ink); font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 550; line-height: 1.4; text-align: center; font-variant-numeric: tabular-nums; }
+.section-count { margin-inline-start: 4px; padding: 3px 9px; border-radius: 999px; background: var(--green-pale); color: var(--green-ink); font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 550; line-height: 1.4; white-space: nowrap; overflow-wrap: normal; vertical-align: middle; font-variant-numeric: tabular-nums; }
 .annotation-card { --badge-background: #faedc5; --badge-ink: #80580d; --badge-dot: #d5a119; position: relative; margin-top: 16px; padding: 28px 30px 32px; background: var(--annotation-surface); border: 1px solid var(--annotation-border); border-radius: 18px; transition: border-color .15s, box-shadow .15s; }
 .annotation-card:hover, .annotation-card:focus-within { border-color: var(--annotation-border-hover); box-shadow: 0 5px 16px rgb(31 44 33 / 7%); }
 :root[data-theme='dark'] .annotation-card { --badge-background: #493c22; --badge-ink: #f0d18b; --badge-dot: #e2bb50; }
