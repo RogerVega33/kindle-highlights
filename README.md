@@ -59,6 +59,8 @@ Iniciar sesión, registrarse, recuperar la cuenta y cambiar la contraseña compa
 
 Define `TRUSTED_PROXY_IP` en `.env` con la IP exacta desde la que el proxy llega al contenedor.
 
+En los logs, `peerIp` es la IP de la conexión directa; `clientIp` solo aparece si el proxy envía `X-Forwarded-For` con una IP válida y distinta de `peerIp`.
+
 Si el proxy se ejecuta en el servidor anfitrión, su IP vista por la aplicación puede ser la puerta de enlace de la red Docker. Cuando la red del proyecto ya exista, lista las redes y consulta su puerta de enlace (ajusta `kindle-highlights_default` si tiene otro nombre):
 
 ```bash

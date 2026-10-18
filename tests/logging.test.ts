@@ -32,6 +32,7 @@ interface LogRecord {
   event: string; level: string; time: string; reqId?: string; method?: string;
   route?: string; statusCode?: number; durationMs?: number; fileIndex?: number;
   error?: { type: string; code?: string };
+  clientIp?: string; peerIp?: string; protocol?: string;
 }
 
 function capture() {
@@ -95,6 +96,118 @@ test('los healthchecks GET y HEAD exitosos conservan su ID sin escribir logs', a
     assert.match(String(response.headers['x-request-id']), /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/);
   }
   assert.deepEqual(logs.records(), []);
+});
+
+test('los logs distinguen la IP del cliente y del proxy confiable sin guardar las cabeceras', async t => {
+  const proxy = '192.0.2.10';
+  const client = '198.51.100.20';
+  const { app, logs } = await fixture({ trustedProxies: [proxy] });
+  t.after(() => app.close());
+  const response = await app.inject({ url: '/api/books', remoteAddress: proxy,
+    headers: { 'x-forwarded-for': client, 'x-forwarded-host': 'kindle.example', 'x-forwarded-proto': 'https' } });
+  assert.equal(response.statusCode, 200);
+  const records = logs.records().filter(record => record.reqId === response.headers['x-request-id']);
+  assert.equal(records.length, 2);
+  for (const record of records) {
+    assert.equal(record.clientIp, client);
+    assert.equal(record.peerIp, proxy);
+    assert.equal(record.protocol, 'https');
+  }
+  assert.equal(logs.text().includes('kindle.example'), false);
+  assert.equal(logs.text().includes('x-forwarded-for'), false);
+  assert.equal(logs.text().includes('forwardedForPresent'), false);
+  assert.equal(logs.text().includes('forwardedHostPresent'), false);
+});
+
+test('sin reenvío confiable solo aparece peerIp y no se acepta una IP falsificada', async t => {
+  const proxy = '192.0.2.10';
+  const outsider = '192.0.2.11';
+  const { app, logs } = await fixture({ trustedProxies: [proxy] });
+  t.after(() => app.close());
+  const missing = await app.inject({ url: '/api/books', remoteAddress: proxy });
+  const direct = await app.inject({ url: '/api/books', remoteAddress: outsider });
+  const forged = await app.inject({ url: '/api/books', remoteAddress: outsider,
+    headers: { 'x-forwarded-for': '198.51.100.20', 'x-forwarded-proto': 'https', 'x-forwarded-host': 'kindle.example' } });
+  for (const [response, peer] of [[missing, proxy], [direct, outsider], [forged, outsider]] as const) {
+    const records = logs.records().filter(record => record.reqId === response.headers['x-request-id']);
+    assert.ok(records.length > 0);
+    for (const record of records) {
+      assert.equal(Object.hasOwn(record, 'clientIp'), false);
+      assert.equal(record.peerIp, peer);
+      assert.equal(record.protocol, 'http');
+    }
+  }
+  assert.equal(logs.text().includes('198.51.100.20'), false);
+});
+
+test('una IP reenviada igual al peer no se duplica, aunque cambie su representación IPv6', async t => {
+  for (const [peer, forwarded] of [
+    ['192.0.2.10', '192.0.2.10'],
+    ['::ffff:192.0.2.10', '192.0.2.10'],
+    ['2001:db8::10', '2001:0db8:0000:0000:0000:0000:0000:0010'],
+  ]) {
+    const { app, logs } = await fixture({ trustedProxies: [peer] });
+    t.after(() => app.close());
+    const response = await app.inject({ url: '/api/books', remoteAddress: peer,
+      headers: { 'x-forwarded-for': forwarded } });
+    assert.equal(response.statusCode, 200);
+    const records = logs.records().filter(record => record.reqId === response.headers['x-request-id']);
+    assert.ok(records.length > 0);
+    assert.ok(records.every(record => record.peerIp === peer && !Object.hasOwn(record, 'clientIp')));
+  }
+});
+
+test('los logs aceptan IPv6 y no imprimen una cabecera de IP malformada aunque venga del proxy', async t => {
+  const proxy = '2001:db8::10';
+  const { app, logs } = await fixture({ trustedProxies: [proxy] });
+  t.after(() => app.close());
+  const valid = await app.inject({ url: '/api/books', remoteAddress: proxy,
+    headers: { 'x-forwarded-for': '2001:db8::20' } });
+  const validRecord = logs.records().find(record => record.reqId === valid.headers['x-request-id']);
+  assert.equal(validRecord?.clientIp, '2001:db8::20');
+  assert.equal(validRecord?.peerIp, proxy);
+  const malformed = await app.inject({ url: '/api/books', remoteAddress: proxy,
+    headers: { 'x-forwarded-for': password, 'x-forwarded-proto': privateText, 'x-forwarded-host': privatePath } });
+  const malformedRecords = logs.records().filter(record => record.reqId === malformed.headers['x-request-id']);
+  assert.ok(malformedRecords.length > 0);
+  assert.ok(malformedRecords.every(record => record.clientIp === undefined && record.protocol === undefined
+    && record.peerIp === proxy));
+  assertPrivate(logs.text());
+});
+
+test('el filtro permite solo IP válidas y protocolos conocidos y omite los indicadores de cabeceras', () => {
+  const logs = capture();
+  logs.logger.info({ event: 'http.request_completed', clientIp: '198.51.100.20', peerIp: '::ffff:192.0.2.10',
+    protocol: 'https', forwardedForPresent: false, forwardedHostPresent: true });
+  logs.logger.info({ event: 'http.request_completed', clientIp: password, peerIp: token,
+    protocol: phrase, forwardedForPresent: privateText, forwardedHostPresent: privatePath });
+  const [valid, invalid] = logs.records();
+  assert.equal(valid.clientIp, '198.51.100.20');
+  assert.equal(valid.peerIp, '::ffff:192.0.2.10');
+  assert.equal(invalid.clientIp, undefined);
+  assert.equal(invalid.peerIp, undefined);
+  assert.equal(invalid.protocol, undefined);
+  assert.equal(logs.text().includes('forwardedForPresent'), false);
+  assert.equal(logs.text().includes('forwardedHostPresent'), false);
+  assertPrivate(logs.text());
+});
+
+test('un rechazo por límite de acceso conserva la IP efectiva y la del proxy en el diagnóstico', async t => {
+  const proxy = '192.0.2.10';
+  const client = '198.51.100.20';
+  const { app, logs } = await fixture({ trustedProxies: [proxy] });
+  t.after(() => app.close());
+  const request = { method: 'POST' as const, url: '/api/auth/login', remoteAddress: proxy,
+    headers: { 'x-requested-with': 'KindleHighlights', 'x-forwarded-for': client },
+    payload: { username: user.username, password } };
+  for (let index = 0; index < 20; index++) assert.equal((await app.inject(request)).statusCode, 200);
+  const blocked = await app.inject(request);
+  assert.equal(blocked.statusCode, 429);
+  const records = logs.records().filter(record => record.reqId === blocked.headers['x-request-id']);
+  assert.deepEqual(records.map(record => record.event), ['http.request_started', 'http.request_failed', 'http.request_completed']);
+  assert.ok(records.every(record => record.clientIp === client && record.peerIp === proxy));
+  assert.equal(records[1].statusCode, 429);
+  assertPrivate(logs.text());
 });
 
 test('un error de health conserva el diagnóstico, la respuesta y su correlación sin datos privados', async t => {

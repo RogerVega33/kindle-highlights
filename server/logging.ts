@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { isIP } from 'node:net';
 import pino, { type DestinationStream } from 'pino';
 import type { FastifyBaseLogger, FastifyInstance, FastifyRequest } from 'fastify';
 import { RepositoryError } from './errors.js';
@@ -34,6 +35,9 @@ export interface LogDetails {
   durationMs?: number;
   fileIndex?: number;
   port?: number;
+  clientIp?: string;
+  peerIp?: string;
+  protocol?: 'http' | 'https';
 }
 
 /** Repositories only depend on this small diagnostic contract. */
@@ -49,6 +53,7 @@ const routes = new Set([
   '/api/health', '/api/books', '/api/books/:id', '/api/books/:id/annotations/:annotationId',
   '/api/books/:id/cover', '/api/imports', '/api/auth/register', '/api/auth/login',
   '/api/auth/recover', '/api/auth/session', '/api/auth/password', '/api/auth/logout', '/*',
+  '/api/books/random-annotation', '/api/books/:id/annotations/:annotationId/edit',
 ]);
 const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']);
 const errorCodes = new Set([
@@ -90,6 +95,14 @@ function safeError(error: unknown): { type: string; code?: string } {
   }
 }
 
+// Compare equivalent IPv6 spellings and IPv4-mapped addresses without changing
+// the address printed in the log. Inputs have already passed isIP validation.
+function comparableIp(address: string): string {
+  const [ip, zone] = address.split('%', 2);
+  const literal = isIP(ip) === 4 ? `::ffff:${ip}` : ip;
+  return new URL(`http://[${literal}]/`).hostname + (zone ? `%${zone}` : '');
+}
+
 function safeFields(input: unknown): { event: LogEvent } & Record<string, unknown> {
   if (!input || typeof input !== 'object' || input instanceof Error) {
     return { event: 'framework.log', ...(input instanceof Error ? { error: safeError(input) } : {}) };
@@ -103,6 +116,16 @@ function safeFields(input: unknown): { event: LogEvent } & Record<string, unknow
   if (event === 'framework.log') return fields;
   if (source.method !== undefined) fields.method = typeof source.method === 'string' && methods.has(source.method) ? source.method : 'OTHER';
   if (source.route !== undefined) fields.route = typeof source.route === 'string' && routes.has(source.route) ? source.route : 'unmatched';
+  if (event.startsWith('http.')) {
+    // Addresses are the only request-derived strings allowed here. Never log raw
+    // forwarding headers: an untrusted client can put arbitrary content in them.
+    for (const key of ['clientIp', 'peerIp'] as const) {
+      if (typeof source[key] === 'string' && isIP(source[key])) fields[key] = source[key];
+    }
+    if (typeof fields.clientIp === 'string' && typeof fields.peerIp === 'string'
+      && comparableIp(fields.clientIp) === comparableIp(fields.peerIp)) delete fields.clientIp;
+    if (source.protocol === 'http' || source.protocol === 'https') fields.protocol = source.protocol;
+  }
   if (Number.isInteger(source.statusCode) && Number(source.statusCode) >= 100 && Number(source.statusCode) <= 599) fields.statusCode = source.statusCode;
   if (typeof source.durationMs === 'number' && Number.isFinite(source.durationMs) && source.durationMs >= 0) fields.durationMs = Math.round(source.durationMs * 1000) / 1000;
   if (Number.isSafeInteger(source.fileIndex) && Number(source.fileIndex) > 0) fields.fileIndex = source.fileIndex;
@@ -145,8 +168,15 @@ export function createLogger(destination: DestinationStream = process.stdout): F
 
 export const newRequestId = (): string => randomUUID();
 
-export function requestContext(request: FastifyRequest): Pick<LogDetails, 'method' | 'route'> {
-  return { method: request.method, route: request.routeOptions.url ?? 'unmatched' };
+export function requestContext(request: FastifyRequest): Pick<LogDetails,
+  'method' | 'route' | 'clientIp' | 'peerIp' | 'protocol'> {
+  return {
+    method: request.method,
+    route: request.routeOptions.url ?? 'unmatched',
+    clientIp: request.ip,
+    peerIp: request.raw.socket.remoteAddress,
+    protocol: request.protocol === 'http' || request.protocol === 'https' ? request.protocol : undefined,
+  };
 }
 
 function isHealthCheck(request: FastifyRequest): boolean {
