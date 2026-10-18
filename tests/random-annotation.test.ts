@@ -88,9 +88,9 @@ test('el popup muestra la cita destacada y su procedencia con las dos acciones d
   assert.equal(html('[role="dialog"][aria-modal="true"]').length, 1);
   assert.equal(html('.modal-heading h2').text(), 'Anotación aleatoria');
   assert.equal(html('.random-annotation-book').text(), 'Libro ficticio');
-  assert.equal(html('.random-annotation-source-details').text(), 'Autora ficticia · Posición 20');
-  assert.equal(html('.random-annotation-kind').text(), 'Subrayado');
-  assert.equal(html('.random-annotation-chapter').text(), 'Un capítulo');
+  assert.equal(html('.random-annotation-source-details').text(), 'Autora ficticia · Posición 20 · Subrayado');
+  assert.equal(html('.random-annotation-source-details > .random-annotation-kind').text(), 'Subrayado');
+  assert.equal(html.text().includes('Un capítulo'), false);
   assert.equal(html('blockquote.random-annotation-quote').text(), selection.annotation.text);
   assert.equal(html('.annotation-card, textarea').length, 0);
   assert.equal(html('button[aria-label="Cerrar"]').length, 1);

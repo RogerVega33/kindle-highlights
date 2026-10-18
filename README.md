@@ -17,6 +17,7 @@ Tu biblioteca personal de subrayados y notas de Kindle.
 - **Portadas propias:** añade, sustituye o elimina las portadas de tus libros.
 - **Búsqueda y ordenación:** busca libros por título o autor y ordénalos por actividad reciente, título o autor.
 - **Lectura de anotaciones:** busca dentro de cada libro, filtra subrayados o notas y expande o contrae sus secciones.
+- **Anotación aleatoria:** abre desde el menú de tu cuenta una anotación de tu biblioteca al azar, consulta una nueva o accede al libro de origen.
 - **Copiar texto:** copia el contenido de un subrayado o nota al portapapeles.
 - **Modo claro y oscuro:** cambia de tema y conserva tu preferencia en el navegador.
 - **Diseño adaptable:** utiliza la biblioteca desde un computador, tableta o dispositivo móvil.

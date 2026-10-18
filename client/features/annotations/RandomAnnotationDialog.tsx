@@ -59,12 +59,13 @@ export function RandomAnnotationDialogView({ selection, loading, error, onClose,
         <div className="random-annotation-source">
           <div className="random-annotation-book-details">
             <p className="random-annotation-book">{selection.book.title}</p>
-            {sourceDetails && <p className="random-annotation-source-details">{sourceDetails}</p>}
-            {selection.annotation.chapterTitle && <p className="random-annotation-chapter">{selection.annotation.chapterTitle}</p>}
+            <p className="random-annotation-source-details">
+              {sourceDetails && `${sourceDetails} · `}
+              <span className={'random-annotation-kind' + (selection.annotation.kind === 'note' ? ' random-annotation-kind--note' : '')}>
+                {selection.annotation.kind === 'note' ? 'Nota' : 'Subrayado'}
+              </span>
+            </p>
           </div>
-          <span className={'random-annotation-kind' + (selection.annotation.kind === 'note' ? ' random-annotation-kind--note' : '')}>
-            {selection.annotation.kind === 'note' ? 'Nota' : 'Subrayado'}
-          </span>
         </div>
       </>}
       {loading && <p className="random-annotation-status" role="status"><LoaderCircle size={18} className="spin" aria-hidden="true" />Buscando anotación…</p>}
