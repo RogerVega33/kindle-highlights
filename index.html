@@ -7,6 +7,7 @@
     <meta name="color-scheme" content="light" />
     <script>
       (() => {
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
         let theme = 'light';
         try { theme = localStorage.getItem('margen-theme') === 'dark' ? 'dark' : 'light'; } catch {}
         document.documentElement.dataset.theme = theme;
