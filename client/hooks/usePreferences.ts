@@ -21,7 +21,7 @@ export function useTheme() {
 
 export function useToast() {
   const [toast, setToast] = useState<{ message: string; error: boolean } | null>(null);
-  const notify = useCallback((message: string, error = false) => setToast({ message, error }), []);
+  const notify = useCallback((message: string, error = false) => setToast({ message: message.trimEnd().replace(/\.+$/u, ''), error }), []);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), toast.error ? 8000 : 4000);

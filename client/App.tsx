@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { ArrowLeft, CheckCircle2, CircleAlert, LoaderCircle, X } from 'lucide-react';
+import { ArrowLeft, LoaderCircle, X } from 'lucide-react';
 import type { Book, PasswordChangeInput, User } from '../shared/types';
 import { MAX_COVER_BYTES } from '../shared/limits';
 import { libraryApi } from './api/library';
@@ -77,18 +77,18 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
     event.target.value = '';
     if (!file || !book || coverInFlight.current) return;
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-      notify('Elige una imagen PNG, JPEG o WebP para la portada.', true);
+      notify('Elige una imagen PNG, JPEG o WebP para la portada', true);
       return;
     }
     if (file.size > MAX_COVER_BYTES) {
-      notify(`La portada debe pesar ${MAX_COVER_BYTES / 1024 / 1024} MB o menos.`, true);
+      notify(`La portada debe pesar ${MAX_COVER_BYTES / 1024 / 1024} MB o menos`, true);
       return;
     }
     coverInFlight.current = true;
     setCoverBusy(true);
     try {
       library.applyCoverUpdate(await libraryApi.setCover(book.id, await readImage(file)));
-      notify('Portada actualizada.');
+      notify('Portada actualizada');
     } catch (cause) {
       notify(messageOf(cause), true);
     } finally {
@@ -103,7 +103,7 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
     setCoverBusy(true);
     try {
       library.applyCoverUpdate(await libraryApi.deleteCover(book.id));
-      notify('Se quitó la portada.');
+      notify('Se quitó la portada');
     } catch (cause) {
       notify(messageOf(cause), true);
     } finally {
@@ -116,9 +116,9 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(text);
-      notify('Texto copiado.');
+      notify('Texto copiado');
     } catch {
-      notify('No se pudo copiar. Puedes seleccionar el texto y copiarlo manualmente.', true);
+      notify('No se pudo copiar', true);
     }
   }
 
@@ -165,9 +165,9 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
       {importDialog && <ImportDialog target={importDialog.target} onClose={() => setImportDialog(null)} onImported={library.refreshAfterImport} />}
       {deletingBook && <DeleteBookDialog book={deletingBook} onClose={() => setDeletingBook(null)} onDeleted={removeBookFromLibrary} />}
       {passwordDialog && <ChangePasswordDialog onSave={onPasswordChange} onClose={() => setPasswordDialog(false)}
-        onSaved={() => { setPasswordDialog(false); notify('Contraseña actualizada. Las demás sesiones se cerraron.'); }} />}
+        onSaved={() => { setPasswordDialog(false); notify('Contraseña actualizada'); }} />}
       {coverBusy && <div className="activity-pill" role="status"><LoaderCircle size={15} className="spin" />Actualizando portada…</div>}
-      {toast && <div className={'toast' + (toast.error ? ' toast-error' : '')} role={toast.error ? 'alert' : 'status'}>{toast.error ? <CircleAlert size={18} /> : <CheckCircle2 size={18} />}<span>{toast.message}</span><button type="button" aria-label="Cerrar aviso" onClick={dismissToast}><X size={15} /></button></div>}
+      {toast && <div className={'toast' + (toast.error ? ' toast-error' : '')} role={toast.error ? 'alert' : 'status'}><span>{toast.message}</span><button type="button" aria-label="Cerrar aviso" onClick={dismissToast}><X size={15} /></button></div>}
     </div>
   );
 }

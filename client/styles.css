@@ -448,7 +448,6 @@ input[type='search']::-webkit-search-cancel-button { -webkit-appearance: none; }
 .pwa-update-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .pwa-update-actions .button { font-size: var(--text-sm); padding: 9px 12px; }
 .toast { position: fixed; z-index: 60; bottom: 24px; left: 50%; transform: translateX(-50%); max-width: min(520px, calc(100% - 32px)); width: max-content; display: flex; gap: 10px; align-items: center; padding: 13px 14px; color: var(--green-ink); background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: var(--shadow); font-size: var(--text-sm); line-height: 1.7; animation: fade-in .15s ease; }
-.toast > svg { flex-shrink: 0; }
 .toast > button { display: flex; align-items: center; justify-content: center; color: var(--muted); width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0; }
 .toast > button:hover { background: var(--input); }
 .toast-error { color: var(--error-ink); background: var(--error-background); border-color: var(--error-border); border-radius: 10px; }

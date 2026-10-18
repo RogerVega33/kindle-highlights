@@ -160,7 +160,7 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
         setAnnotationDialog(null);
       }} />}
       {annotationDialog?.kind === 'original' && <OriginalAnnotationDialog annotation={annotationDialog.annotation} onClose={() => setAnnotationDialog(null)} returnFocusFallbackRef={title} onRestored={updated => {
-        onAnnotationEdit(updated, 'Anotación restaurada.');
+        onAnnotationEdit(updated, 'Anotación restaurada');
         setAnnotationDialog(null);
       }} />}
     </>

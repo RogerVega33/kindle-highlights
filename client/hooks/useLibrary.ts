@@ -187,16 +187,16 @@ export function useLibrary(notify: Notify) {
 
   function applyMetadataUpdate(book: Book) {
     patchBook(book.id, { title: book.title, author: book.author, updatedAt: book.updatedAt });
-    notify('Datos del libro actualizados.');
+    notify('Datos actualizados');
   }
 
   function applyAnnotationDelete(book: BookDetail) {
     patchBook(book.id, { highlightCount: book.highlightCount, noteCount: book.noteCount, updatedAt: book.updatedAt });
     setSelectedBook(previous => previous?.id === book.id ? { ...previous, annotations: book.annotations } : previous);
-    notify('Anotación eliminada.');
+    notify('Anotación eliminada');
   }
 
-  function applyTextUpdate(annotation: Annotation, message = 'Anotación actualizada.') {
+  function applyTextUpdate(annotation: Annotation, message = 'Anotación actualizada') {
     mutationVersion.current++;
     setSelectedBook(previous => previous?.id === annotation.bookId ? {
       ...previous, annotations: previous.annotations.map(item => item.id === annotation.id ? annotation : item),
@@ -212,7 +212,7 @@ export function useLibrary(notify: Notify) {
       navigation.current?.replaceWithLibrary();
     }
     void loadBooks();
-    notify('Libro eliminado.');
+    notify('Libro eliminado');
   }
 
   return {
