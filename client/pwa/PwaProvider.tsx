@@ -48,7 +48,10 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     void navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).then(value => {
       if (disposed) return;
       registration = value;
-      updates.current = watchPwaUpdates(value, navigator.serviceWorker, () => setUpdateAvailable(true), () => window.location.reload());
+      updates.current = watchPwaUpdates(value, navigator.serviceWorker, () => setUpdateAvailable(true), () => window.location.reload(), {
+        version: document.querySelector<HTMLMetaElement>('meta[name="app-version"]')?.content,
+        onCurrent: () => setUpdateAvailable(false),
+      });
     }).catch(() => {});
 
     return () => {

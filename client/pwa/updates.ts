@@ -1,6 +1,7 @@
 interface UpdateWorker extends EventTarget {
   state: ServiceWorkerState;
-  postMessage: (message: unknown) => void;
+  postMessage(message: unknown): void;
+  postMessage(message: unknown, transfer: Transferable[]): void;
 }
 
 interface UpdateRegistration extends EventTarget {
@@ -9,21 +10,75 @@ interface UpdateRegistration extends EventTarget {
 }
 
 interface UpdateContainer extends EventTarget {
-  controller: unknown;
+  controller: UpdateWorker | null;
 }
 
-/** Installation is silent. Only an update to an already controlled app is announced. */
-export function watchPwaUpdates(registration: UpdateRegistration, workers: UpdateContainer, onAvailable: () => void, reload: () => void) {
+function readVersion(worker: UpdateWorker, signal: AbortSignal): Promise<string | null> {
+  if (signal.aborted || typeof MessageChannel === 'undefined') return Promise.resolve(null);
+  return new Promise(resolve => {
+    const channel = new MessageChannel();
+    let settled = false;
+    function finish(version: string | null) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      signal.removeEventListener('abort', aborted);
+      channel.port1.close();
+      channel.port2.close();
+      resolve(version);
+    }
+    function aborted() { finish(null); }
+    const timeout = setTimeout(aborted, 1500);
+    signal.addEventListener('abort', aborted, { once: true });
+    channel.port1.onmessage = event => finish(typeof event.data?.version === 'string' ? event.data.version : null);
+    try { worker.postMessage({ type: 'GET_VERSION' }, [channel.port2]); }
+    catch { finish(null); }
+  });
+}
+
+/** A page already on the waiting worker's build can activate it without another reload. */
+export function watchPwaUpdates(registration: UpdateRegistration, workers: UpdateContainer, onAvailable: () => void, reload: () => void,
+  options: { version?: string; onCurrent?: () => void } = {}) {
   const tracked = new Map<UpdateWorker, () => void>();
   const announced = new Set<UpdateWorker>();
+  const checked = new Set<UpdateWorker>();
+  const current = new Set<UpdateWorker>();
+  const versions = new Map<UpdateWorker, Promise<string | null>>();
+  const requests = new AbortController();
+  let disposed = false;
   let approved = false;
   let previousController = workers.controller;
-  let activatedElsewhere = false;
+  let activatedElsewhere: UpdateWorker | null = null;
 
-  function announce(worker: UpdateWorker) {
-    if (!workers.controller || announced.has(worker)) return;
+  function showUpdate(worker: UpdateWorker) {
+    if (announced.has(worker)) return;
     announced.add(worker);
     onAvailable();
+  }
+
+  function checkVersion(worker: UpdateWorker, done: (matches: boolean) => void) {
+    if (!options.version) { done(false); return; }
+    let version = versions.get(worker);
+    if (!version) {
+      version = readVersion(worker, requests.signal);
+      versions.set(worker, version);
+    }
+    void version.then(value => { if (!disposed) done(value === options.version); });
+  }
+
+  function announce(worker: UpdateWorker) {
+    if (!workers.controller || checked.has(worker)) return;
+    checked.add(worker);
+    checkVersion(worker, matches => {
+      if (worker.state === 'redundant' || workers.controller === worker
+        || (registration.waiting !== worker && registration.installing !== worker)) return;
+      if (!matches) { showUpdate(worker); return; }
+      current.add(worker);
+      // Other tabs receive controllerchange, but only pages on an older build offer a reload.
+      try { worker.postMessage({ type: 'SKIP_WAITING' }); } catch { return; }
+      activatedElsewhere = null;
+      options.onCurrent?.();
+    });
   }
 
   function watchInstalling() {
@@ -41,9 +96,20 @@ export function watchPwaUpdates(registration: UpdateRegistration, workers: Updat
     if (approved) {
       approved = false;
       reload();
-    } else if (replaced && !activatedElsewhere) {
-      activatedElsewhere = true;
-      if (!announced.size) onAvailable();
+    } else if (replaced) {
+      const controller = workers.controller!;
+      if (current.has(controller)) return;
+      checkVersion(controller, matches => {
+        if (workers.controller !== controller) return;
+        if (matches) {
+          current.add(controller);
+          activatedElsewhere = null;
+          if (!registration.waiting) options.onCurrent?.();
+        } else {
+          activatedElsewhere = controller;
+          showUpdate(controller);
+        }
+      });
     }
   }
 
@@ -54,10 +120,10 @@ export function watchPwaUpdates(registration: UpdateRegistration, workers: Updat
 
   return {
     apply() {
-      if (approved) return false;
+      if (disposed || approved) return false;
       if (!registration.waiting) {
         if (!activatedElsewhere) return false;
-        activatedElsewhere = false;
+        activatedElsewhere = null;
         reload();
         return true;
       }
@@ -66,6 +132,8 @@ export function watchPwaUpdates(registration: UpdateRegistration, workers: Updat
       catch { approved = false; return false; }
     },
     dispose() {
+      disposed = true;
+      requests.abort();
       approved = false;
       registration.removeEventListener('updatefound', watchInstalling);
       workers.removeEventListener('controllerchange', controllerChanged);

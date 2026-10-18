@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { Plugin } from 'vite';
 
 const publicAssets = ['favicon.svg', 'pwa-192.png', 'pwa-512.png', 'pwa-maskable-512.png', 'apple-touch-icon.png'];
+const versionPlaceholder = '__KINDLE_PWA_VERSION__';
 
 export function pwaBuild(): Plugin {
   let root = '';
@@ -12,6 +13,9 @@ export function pwaBuild(): Plugin {
     apply: 'build',
     enforce: 'post',
     configResolved(config) { root = config.root; },
+    transformIndexHtml() {
+      return [{ tag: 'meta', attrs: { name: 'app-version', content: versionPlaceholder }, injectTo: 'head' }];
+    },
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
@@ -27,6 +31,11 @@ export function pwaBuild(): Plugin {
         }
         const assets = ['/', ...files.filter(name => name.startsWith('assets/')).map(name => '/' + name), ...publicAssets.map(name => '/' + name)];
         const config = { cacheName: 'kindle-highlights-static-' + hash.digest('hex').slice(0, 16), assets };
+        const html = bundle['index.html'];
+        if (html?.type === 'asset') {
+          const source = typeof html.source === 'string' ? html.source : Buffer.from(html.source).toString('utf8');
+          html.source = source.replace(versionPlaceholder, config.cacheName);
+        }
         this.emitFile({ type: 'asset', fileName: 'sw.js', source: template.replace('__PWA_CONFIG__', JSON.stringify(config)) });
       },
     },

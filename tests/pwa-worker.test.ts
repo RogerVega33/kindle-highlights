@@ -36,9 +36,9 @@ function fixture() {
       constructor(path: string, options: RequestInit) { super(new URL(path, 'https://example.test'), options); }
     },
   });
-  async function lifecycle(type: string, data?: unknown) {
+  async function lifecycle(type: string, data?: unknown, ports: unknown[] = []) {
     const pending: Promise<unknown>[] = [];
-    events.get(type)!({ data, waitUntil: (task: Promise<unknown>) => pending.push(task) });
+    events.get(type)!({ data, ports, waitUntil: (task: Promise<unknown>) => pending.push(task) });
     await Promise.all(pending);
   }
   function request(path: string, mode = 'cors', method = 'GET') {
@@ -68,6 +68,16 @@ test('activar limpia únicamente las versiones anteriores de esta app', async ()
   await worker.lifecycle('activate');
   assert.deepEqual(worker.deleted, ['kindle-highlights-static-viejo']);
   assert.equal(worker.claims(), 1);
+});
+
+test('el worker informa su versión mediante el puerto privado sin activar una actualización', async () => {
+  const worker = fixture();
+  const replies: { version: string }[] = [];
+  await worker.lifecycle('message', { type: 'GET_VERSION' }, [{ postMessage: (value: { version: string }) => replies.push(value) }]);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].version, cacheName);
+  assert.equal(worker.skips(), 0);
+  await worker.lifecycle('message', { type: 'GET_VERSION' });
 });
 
 test('autenticación, datos privados, escrituras, recursos ajenos y archivos desconocidos pasan directamente a la red', () => {

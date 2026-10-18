@@ -16,6 +16,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('message', event => {
+  if (event.data?.type === 'GET_VERSION') event.ports?.[0]?.postMessage({ version: cacheName });
   if (event.data?.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
 });
 

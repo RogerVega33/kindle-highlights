@@ -39,6 +39,9 @@ test('Vite emite un worker con los archivos compilados y versiona las actualizac
     const source = await readFile(join(root, 'dist/sw.js'), 'utf8');
     const config = JSON.parse(/const \{ cacheName, assets \} = (.*);/.exec(source)![1]) as { cacheName: string; assets: string[] };
     assert.match(config.cacheName, /^kindle-highlights-static-[a-f0-9]{16}$/);
+    const html = await readFile(join(root, 'dist/index.html'), 'utf8');
+    assert.ok(html.includes(`<meta name="app-version" content="${config.cacheName}">`));
+    assert.ok(!html.includes('__KINDLE_PWA_VERSION__'));
     assert.ok(config.assets.some(path => /^\/assets\/.+\.js$/.test(path)));
     assert.ok(config.assets.every(path => !path.startsWith('/api')));
     for (const path of config.assets) await readFile(join(root, 'dist', path === '/' ? 'index.html' : path.slice(1)));
@@ -50,4 +53,7 @@ test('Vite emite un worker con los archivos compilados y versiona las actualizac
   const updated = await compile();
   assert.notEqual(updated.config.cacheName, first.config.cacheName);
   assert.notDeepEqual(updated.config.assets, first.config.assets);
+  await writeFile(join(root, 'index.html'), '<html><head><title>Nuevo texto ficticio</title></head><body><script type="module" src="/entry.js"></script></body></html>');
+  const htmlUpdated = await compile();
+  assert.notEqual(htmlUpdated.config.cacheName, updated.config.cacheName, 'Los cambios exclusivos del HTML también deben cambiar la versión.');
 });
