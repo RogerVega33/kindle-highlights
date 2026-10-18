@@ -7,10 +7,10 @@ import { libraryApi } from '../../api/library';
 import { ErrorNotice } from '../../components/ErrorNotice';
 import { messageOf } from '../../lib/format';
 
-export function BookMetadata({ book, headingRef, onUpdated }: {
+export function BookMetadata({ book, headingRef, onUpdated, editing, onEditingChange }: {
   book: Book; headingRef: RefObject<HTMLHeadingElement | null>; onUpdated: (book: Book) => void;
+  editing: boolean; onEditingChange: (editing: boolean) => void;
 }) {
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ title: book.title, author: book.author });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -18,18 +18,20 @@ export function BookMetadata({ book, headingRef, onUpdated }: {
   const editButton = useRef<HTMLButtonElement>(null);
   const errorId = useId();
 
-  useEffect(() => { if (editing) titleInput.current?.focus(); }, [editing]);
-
-  function startEditing() {
+  useEffect(() => {
+    if (!editing) return;
     setDraft({ title: book.title, author: book.author });
     setError('');
-    setEditing(true);
-  }
+    titleInput.current?.focus();
+  }, [editing, book.title, book.author]);
 
   function finishEditing() {
-    setEditing(false);
+    onEditingChange(false);
     setError('');
-    window.requestAnimationFrame(() => editButton.current?.focus());
+    window.requestAnimationFrame(() => {
+      const target = editButton.current?.getClientRects().length ? editButton.current : headingRef.current;
+      target?.focus({ preventScroll: true });
+    });
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLFormElement>) {
@@ -83,7 +85,7 @@ export function BookMetadata({ book, headingRef, onUpdated }: {
         </form>
       ) : <div className="sidebar-meta-heading">
         <p>{book.author || 'Autor desconocido'}</p>
-        <button type="button" ref={editButton} className="book-metadata-edit" onClick={startEditing}><Pencil size={14} /> Editar</button>
+        <button type="button" ref={editButton} className="book-metadata-edit" onClick={() => onEditingChange(true)}><Pencil size={14} /> Editar</button>
       </div>}
     </div>
   );

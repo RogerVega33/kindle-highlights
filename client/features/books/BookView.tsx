@@ -24,6 +24,7 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
   const [deletingAnnotation, setDeletingAnnotation] = useState<Annotation | null>(null);
   const [annotationDialog, setAnnotationDialog] = useState<{ kind: 'edit' | 'original'; annotation: Annotation } | null>(null);
   const [coverActionsVisible, setCoverActionsVisible] = useState(false);
+  const [editingMetadata, setEditingMetadata] = useState(false);
   const coverActionsTimer = useRef<number | null>(null);
   const sectionId = useId();
   const activeFilter = filter === 'highlight' || filter === 'note' ? filter : 'all';
@@ -106,12 +107,12 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
             </div>
           </div>
           <div className="book-details">
-            <BookMetadata book={book} headingRef={title} onUpdated={onMetadataUpdate} />
+            <BookMetadata book={book} headingRef={title} onUpdated={onMetadataUpdate} editing={editingMetadata} onEditingChange={setEditingMetadata} />
             <div className="book-stats"><span><Highlighter size={15} />{plural(book.highlightCount, 'subrayado', 'subrayados')}</span><span><StickyNote size={15} />{plural(book.noteCount, 'nota', 'notas')}</span></div>
           </div>
           <div className="book-actions">
             <button type="button" className="button button-outline sidebar-import" onClick={() => onImport(book)}><Plus size={16} /> Importar más</button>
-            <BookCoverMenu key={book.id} book={book} busy={coverBusy} onCover={item => { hideCoverActions(); onCover(item); }} onRemoveCover={onRemoveCover} />
+            <BookCoverMenu key={book.id} book={book} busy={coverBusy} editingMetadata={editingMetadata} onEditMetadata={() => setEditingMetadata(true)} onCover={item => { hideCoverActions(); onCover(item); }} onRemoveCover={onRemoveCover} />
             {book.coverUrl && <button type="button" className="remove-cover-button" disabled={coverBusy} onClick={() => onRemoveCover(book)}><Trash2 size={12} /> Quitar portada</button>}
           </div>
         </aside>
@@ -137,7 +138,6 @@ export function BookView({ book, loading, onBack, onCover, onRemoveCover, onImpo
                     <ChevronDown size={20} className="section-chevron" aria-hidden="true" />
                     <span className="section-label">{group.title}</span>
                     <span className="section-count" aria-label={plural(group.annotations.length, 'anotación', 'anotaciones')}>{group.annotations.length}</span>
-                    <span className="section-rule" aria-hidden="true" />
                   </button>
                 </h3>}
                 <div id={contentId} hidden={collapsed}>

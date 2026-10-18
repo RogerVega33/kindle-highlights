@@ -180,7 +180,7 @@ export default function App() {
     onSessionRetry={auth.retry} busy={auth.busy} theme={theme} onToggleTheme={toggleTheme} sessionError={auth.error} />;
   if (!auth.user && auth.sessionUnavailable && !auth.recovery) return <SessionUnavailableView theme={theme} onToggleTheme={toggleTheme}
     message={auth.error} checking={auth.checking} onRetry={auth.retry} />;
-  return <div className="app">
+  return <div className="app app--auth">
     <SiteHeader theme={theme} onToggleTheme={toggleTheme} onHome={() => window.scrollTo({ top: 0, behavior: 'instant' })} />
     <PwaUpdateNotice />
     {auth.recovery ? <RecoveryPhraseView username={auth.recovery.username} phrase={auth.recovery.phrase} reason={auth.recovery.reason} onContinue={auth.finishRecovery} />
