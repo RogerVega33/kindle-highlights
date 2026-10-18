@@ -46,6 +46,7 @@ test('la biblioteca, importación, anotaciones y portadas exigen sesión antes d
   const { app, selected } = await fixture(t);
   for (const entry of [
     { method: 'GET', url: '/api/books' }, { method: 'GET', url: '/api/books/otro' },
+    { method: 'GET', url: '/api/books/random-annotation' },
     { method: 'POST', url: '/api/imports', payload: { files: [originalNotebook] } },
     { method: 'PATCH', url: '/api/books/otro', payload: { title: 'Nuevo', author: '' } },
     { method: 'DELETE', url: '/api/books/otro' }, { method: 'GET', url: '/api/books/otro/cover' },
@@ -85,6 +86,10 @@ test('dos usuarios no pueden leer ni modificar libros, anotaciones o portadas de
   const id = imported.json<ImportResponse>().results[0].bookId!;
   const detail = (await app.inject({ url: '/api/books/' + id, headers: { cookie: a.cookie } })).json<BookDetail>();
   const annotation = detail.annotations[0];
+  const randomA = await app.inject({ url: '/api/books/random-annotation', headers: { cookie: a.cookie } });
+  const randomB = await app.inject({ url: '/api/books/random-annotation', headers: { cookie: b.cookie } });
+  assert.equal(randomA.json().selection.book.id, id);
+  assert.deepEqual(randomB.json(), { selection: null });
   const path = '/api/books/' + id;
   const start = selected.length;
   for (const entry of [

@@ -17,6 +17,7 @@ import { AuthView } from './features/auth/AuthView';
 import { SessionUnavailableView } from './features/auth/SessionUnavailableView';
 import { RecoveryPhraseView } from './features/auth/RecoveryPhraseView';
 import { ChangePasswordDialog } from './features/auth/ChangePasswordDialog';
+import { RandomAnnotationDialog } from './features/annotations/RandomAnnotationDialog';
 import { useAuth } from './hooks/useAuth';
 import { useAuthNavigation } from './hooks/useAuthNavigation';
 import { readImage } from './lib/files';
@@ -33,6 +34,7 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
   const [importDialog, setImportDialog] = useState<{ target: Book | null } | null>(null);
   const [deletingBook, setDeletingBook] = useState<Book | null>(null);
   const [passwordDialog, setPasswordDialog] = useState(false);
+  const [randomAnnotationDialog, setRandomAnnotationDialog] = useState(false);
   const [coverBusy, setCoverBusy] = useState(false);
   const coverInput = useRef<HTMLInputElement>(null);
   const coverTarget = useRef<Book | null>(null);
@@ -43,6 +45,7 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
     setImportDialog(null);
     setDeletingBook(null);
     setPasswordDialog(false);
+    setRandomAnnotationDialog(false);
     if (!library.bookId) headingRef.current?.focus({ preventScroll: true });
   }, [library.bookId]);
 
@@ -138,7 +141,7 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
         content?.scrollIntoView({ block: 'start' });
       }}>Saltar al contenido</a>
       <SiteHeader theme={theme} onToggleTheme={onToggleTheme} onHome={backToLibrary} user={user} onLogout={onLogout} busy={busy}
-        onChangePassword={() => setPasswordDialog(true)} />
+        onChangePassword={() => setPasswordDialog(true)} onRandomAnnotation={() => setRandomAnnotationDialog(true)} />
       <PwaUpdateNotice />
       {sessionError && <div className="page-shell"><ErrorNotice title="Revisa tu sesión" message={sessionError}
         action={{ label: 'Reintentar sesión', onClick: onSessionRetry, disabled: busy }} /></div>}
@@ -166,6 +169,8 @@ function LibraryWorkspace({ user, onLogout, onPasswordChange, onSessionRetry, bu
       {deletingBook && <DeleteBookDialog book={deletingBook} onClose={() => setDeletingBook(null)} onDeleted={removeBookFromLibrary} />}
       {passwordDialog && <ChangePasswordDialog onSave={onPasswordChange} onClose={() => setPasswordDialog(false)}
         onSaved={() => { setPasswordDialog(false); notify('Contraseña actualizada'); }} />}
+      {randomAnnotationDialog && <RandomAnnotationDialog onClose={() => setRandomAnnotationDialog(false)}
+        onOpenBook={book => { setRandomAnnotationDialog(false); library.openBook(book); }} />}
       {coverBusy && <div className="activity-pill" role="status"><LoaderCircle size={15} className="spin" />Actualizando portada…</div>}
       {toast && <div className={'toast' + (toast.error ? ' toast-error' : '')} role={toast.error ? 'alert' : 'status'}><span>{toast.message}</span><button type="button" aria-label="Cerrar aviso" onClick={dismissToast}><X size={15} /></button></div>}
     </div>

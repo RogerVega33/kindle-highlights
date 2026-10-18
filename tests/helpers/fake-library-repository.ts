@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, ImportFile, ImportResult, UpdateBookInput } from '../../shared/types.js';
+import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, ImportFile, ImportResult, RandomAnnotation, UpdateBookInput } from '../../shared/types.js';
 import { orderAnnotations } from '../../shared/annotation-order.js';
 import { bookListOptions, bookPage, compareBooks, searchable } from '../../server/book-list.js';
 import { decodeCover } from '../../server/covers.js';
@@ -44,6 +44,15 @@ export class FakeLibraryRepository implements LibraryRepository {
     });
     const offset = (page.page - 1) * page.pageSize;
     return { ...page, books: matching.sort(compareBooks(parsed.sort)).slice(offset, offset + page.pageSize).map(book => ({ ...book })) };
+  }
+
+  getRandomAnnotation(excludeId?: string): RandomAnnotation | null {
+    const all = [...this.books.values()].flatMap(({ book, annotations }) => annotations
+      .filter(annotation => annotation.text?.trim())
+      .map(annotation => ({ book: { id: book.id, title: book.title, author: book.author }, annotation: { ...annotation } })));
+    const others = all.filter(item => item.annotation.id !== excludeId);
+    const candidates = others.length ? others : all;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
   }
 
   getBook(id: string): BookDetail {

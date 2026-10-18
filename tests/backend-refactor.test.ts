@@ -23,6 +23,7 @@ test('las rutas permiten un repositorio asíncrono sin cambiar los contratos ni 
   const fixture = new FakeLibraryRepository();
   const repository: LibraryRepository = {
     listBooks: async options => fixture.listBooks(options),
+    getRandomAnnotation: async excludeId => fixture.getRandomAnnotation(excludeId),
     getBook: async id => fixture.getBook(id),
     updateBook: async (id, metadata) => fixture.updateBook(id, metadata),
     deleteBook: async id => fixture.deleteBook(id),

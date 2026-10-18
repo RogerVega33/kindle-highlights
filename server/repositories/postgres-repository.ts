@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, ImportFile, ImportResult, UpdateBookInput } from '../../shared/types.js';
+import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, ImportFile, ImportResult, RandomAnnotation, UpdateBookInput } from '../../shared/types.js';
 import { orderAnnotations } from '../../shared/annotation-order.js';
 import { bookListOptions, bookPage } from '../book-list.js';
 import { decodeCover } from '../covers.js';
@@ -169,6 +169,22 @@ export class PostgresRepository implements LibraryRepository {
       [this.userId, parsed.query, SQL_MARK_PATTERN, page.pageSize, (page.page - 1) * page.pageSize]);
       return { ...page, books: rows.map(toBook) };
     }, true);
+  }
+
+  async getRandomAnnotation(excludeId?: string): Promise<RandomAnnotation | null> {
+    if (excludeId !== undefined) requireUuid(excludeId, 'La anotación no es válida.');
+    const { rows } = await this.pool.query<AnnotationRow & { book_title: string; book_author: string }>(
+      `SELECT ${ANNOTATION_COLUMNS}, b.title AS book_title, b.author AS book_author
+        FROM annotations a JOIN books b ON b.id = a.book_id
+        WHERE b.user_id = $1 AND NULLIF(btrim(COALESCE(a.edited_text, a.original_text)), '') IS NOT NULL
+        ORDER BY CASE WHEN a.id = $2::uuid THEN 1 ELSE 0 END, random() LIMIT 1`,
+      [this.userId, excludeId ?? null],
+    );
+    const row = rows[0];
+    return row ? {
+      book: { id: row.book_id, title: row.book_title, author: row.book_author },
+      annotation: toAnnotation(row),
+    } : null;
   }
 
   async getBook(id: string): Promise<BookDetail> {

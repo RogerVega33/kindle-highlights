@@ -70,6 +70,15 @@ export interface BookDetail extends Book {
   annotations: Annotation[];
 }
 
+export interface RandomAnnotation {
+  book: Pick<Book, 'id' | 'title' | 'author'>;
+  annotation: Annotation;
+}
+
+export interface RandomAnnotationResponse {
+  selection: RandomAnnotation | null;
+}
+
 export interface ImportIssue {
   entry: number;
   message: string;

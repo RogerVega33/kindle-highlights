@@ -1,4 +1,4 @@
-import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, DeleteBookResponse, ImportFile, ImportRequest, ImportResponse, ImportResult, SetCoverInput, UpdateAnnotationInput, UpdateBookInput } from '../../shared/types';
+import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, DeleteBookResponse, ImportFile, ImportRequest, ImportResponse, ImportResult, RandomAnnotation, RandomAnnotationResponse, SetCoverInput, UpdateAnnotationInput, UpdateBookInput } from '../../shared/types';
 
 import { request } from './request';
 
@@ -13,6 +13,10 @@ export const libraryApi = {
     if (options.sort !== undefined) params.set('sort', options.sort);
     const query = params.toString();
     return request('/api/books' + (query ? '?' + query : ''), { signal });
+  },
+  async getRandomAnnotation(excludeId?: string, signal?: AbortSignal): Promise<RandomAnnotation | null> {
+    const query = excludeId ? '?' + new URLSearchParams({ exclude: excludeId }) : '';
+    return (await request<RandomAnnotationResponse>('/api/books/random-annotation' + query, { signal })).selection;
   },
   getBook(id: string, signal?: AbortSignal): Promise<BookDetail> {
     return request(bookPath(id), { signal });

@@ -90,6 +90,36 @@ const findBook = (overrides: Record<string, unknown> = {}): Step => ({ sql: /WHE
 const hash = (value: unknown): string => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const isNotFound = (error: unknown): boolean => error instanceof RepositoryError && error.statusCode === 404;
 
+test('PostgreSQL: la anotación aleatoria limita al usuario y prioriza otra sin perder la única disponible', async () => {
+  for (const excludeId of [undefined, otherAnnotationId, annotationId]) {
+    const pool = new ScriptedPool([{
+      via: 'pool', sql: /FROM annotations a JOIN books b ON b.id = a.book_id/,
+      values: [userId, excludeId ?? null],
+      inspect: sql => {
+        assert.match(sql, /WHERE b\.user_id = \$1/);
+        assert.match(sql, /NULLIF\(btrim\(COALESCE\(a\.edited_text, a\.original_text\)\), ''\) IS NOT NULL/);
+        assert.match(sql, /ORDER BY CASE WHEN a\.id = \$2::uuid THEN 1 ELSE 0 END, random\(\) LIMIT 1/);
+        assert.doesNotMatch(sql, /OFFSET|UPDATE|INSERT|DELETE/);
+      },
+      rows: [annotationRow({ book_title: 'Libro ficticio', book_author: 'Autora', chapter_title: 'Capítulo uno' })],
+    }]);
+    const selected = await new PostgresRepository(pool, userId).getRandomAnnotation(excludeId);
+    assert.deepEqual(selected?.book, { id: bookId, title: 'Libro ficticio', author: 'Autora' });
+    assert.equal(selected?.annotation.text, 'Última edición.');
+    assert.equal(selected?.annotation.originalText, 'Una idea original.');
+    assert.equal(selected?.annotation.edited, true);
+    assert.equal(selected?.annotation.chapterTitle, 'Capítulo uno');
+    assert.equal(selected?.annotation.location, 20);
+    pool.done(0);
+  }
+  const empty = new ScriptedPool([{ via: 'pool', sql: /random\(\) LIMIT 1/ }]);
+  assert.equal(await new PostgresRepository(empty, userId).getRandomAnnotation(), null);
+  empty.done(0);
+  const invalid = new ScriptedPool([]);
+  await assert.rejects(new PostgresRepository(invalid, userId).getRandomAnnotation('inválida'), isNotFound);
+  invalid.done(0);
+});
+
 test('PostgreSQL: construir el repositorio no conecta y la lista limita usuario sin descargar portadas', async () => {
   const pool = new ScriptedPool([
     { sql: /^BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY$/ },

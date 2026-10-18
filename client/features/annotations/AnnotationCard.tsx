@@ -1,10 +1,29 @@
 import { Copy, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { Annotation, AnnotationKind } from '../../../shared/types';
 import { usePopupMenu } from '../../hooks/usePopupMenu';
 import { positionLabel } from '../../lib/format';
 
 function annotationLabel(kind: AnnotationKind): string {
   return kind === 'highlight' ? 'Subrayado' : 'Nota';
+}
+
+export function AnnotationDisplay({ annotation, actions, onShowOriginal }: {
+  annotation: Annotation; actions?: ReactNode; onShowOriginal?: (annotation: Annotation) => void;
+}) {
+  return <article className={'annotation-card annotation-' + annotation.kind} data-color={annotation.color || undefined}>
+    <div className="annotation-meta">
+      <div className="annotation-info">
+        <span className="annotation-kind">{annotationLabel(annotation.kind)}</span><span className="annotation-position">{positionLabel(annotation)}</span>
+        {annotation.edited && (onShowOriginal
+          ? <button type="button" className="annotation-edited" title="Ver original" aria-label="Ver texto original" onClick={() => onShowOriginal(annotation)}>editado</button>
+          : <span className="annotation-edited">editado</span>)}
+      </div>
+      {actions}
+    </div>
+    {annotation.chapterTitle && <p className="annotation-chapter">{annotation.chapterTitle}</p>}
+    {annotation.text ? <p className="annotation-text">{annotation.text}</p> : <p className="annotation-missing">Esta entrada no incluye texto en la exportación.</p>}
+  </article>;
 }
 
 export function AnnotationCard({ annotation, onCopy, onDelete, onEdit, onShowOriginal }: {
@@ -16,12 +35,7 @@ export function AnnotationCard({ annotation, onCopy, onDelete, onEdit, onShowOri
   const menuLabel = 'Opciones de ' + (annotation.kind === 'highlight' ? 'subrayado' : 'nota') + (position ? ': ' + position : '');
 
   return (
-    <article className={'annotation-card annotation-' + annotation.kind} data-color={annotation.color || undefined}>
-      <div className="annotation-meta">
-        <div className="annotation-info">
-          <span className="annotation-kind">{annotationLabel(annotation.kind)}</span><span className="annotation-position">{position}</span>
-          {annotation.edited && <button type="button" className="annotation-edited" title="Ver original" aria-label="Ver texto original" onClick={() => onShowOriginal(annotation)}>editado</button>}
-        </div>
+    <AnnotationDisplay annotation={annotation} onShowOriginal={onShowOriginal} actions={
         <div className="annotation-actions" {...menu.rootProps}>
           <button type="button" className="icon-button annotation-menu-trigger" ref={menu.triggerRef} aria-label={menuLabel}
             aria-haspopup="menu" aria-expanded={menu.open} aria-controls={menu.open ? menu.menuId : undefined} onClick={menu.toggle}>
@@ -33,9 +47,6 @@ export function AnnotationCard({ annotation, onCopy, onDelete, onEdit, onShowOri
             <button type="button" className="annotation-menu-delete" role="menuitem" tabIndex={-1} onClick={() => { menu.close(); onDelete(annotation); }}><Trash2 size={18} aria-hidden="true" />Eliminar</button>
           </div>}
         </div>
-      </div>
-      {annotation.chapterTitle && <p className="annotation-chapter">{annotation.chapterTitle}</p>}
-      {annotation.text ? <p className="annotation-text">{annotation.text}</p> : <p className="annotation-missing">Esta entrada no incluye texto en la exportación.</p>}
-    </article>
+    } />
   );
 }

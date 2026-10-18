@@ -1,4 +1,4 @@
-import { Download, KeyRound, LogOut, Moon, Sun } from 'lucide-react';
+import { Download, KeyRound, LogOut, Moon, Shuffle, Sun } from 'lucide-react';
 import type { User } from '../../shared/types';
 import { usePopupMenu } from '../hooks/usePopupMenu';
 import { usePwa } from '../pwa/PwaProvider';
@@ -10,10 +10,11 @@ export interface SiteHeaderProps {
   user?: User;
   onLogout?: () => void;
   onChangePassword?: () => void;
+  onRandomAnnotation?: () => void;
   busy?: boolean;
 }
 
-export function SiteHeader({ theme, onToggleTheme, onHome, user, onLogout, onChangePassword, busy }: SiteHeaderProps) {
+export function SiteHeader({ theme, onToggleTheme, onHome, user, onLogout, onChangePassword, onRandomAnnotation, busy }: SiteHeaderProps) {
   const menu = usePopupMenu();
   const pwa = usePwa();
   return <header className="site-header"><div className="header-inner">
@@ -32,6 +33,8 @@ export function SiteHeader({ theme, onToggleTheme, onHome, user, onLogout, onCha
         </button>
         {menu.open && <div className="account-menu" id={menu.menuId} role="menu" aria-label="Mi cuenta" ref={menu.menuRef}>
           <span className="account-menu-heading" aria-hidden="true">{user.username}</span>
+          {onRandomAnnotation && <button type="button" role="menuitem" tabIndex={-1} disabled={busy}
+            onClick={() => { menu.close(); onRandomAnnotation(); }}><Shuffle size={17} aria-hidden="true" />Anotación aleatoria</button>}
           {pwa.canInstall && <button type="button" role="menuitem" tabIndex={-1}
             onClick={() => { menu.close(); void pwa.install(); }}><Download size={17} aria-hidden="true" />Instalar aplicación</button>}
           {onChangePassword && <button type="button" role="menuitem" tabIndex={-1} disabled={busy}

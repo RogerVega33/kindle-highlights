@@ -1,4 +1,4 @@
-import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, ImportFile, ImportResult, UpdateBookInput } from '../../shared/types.js';
+import type { Annotation, Book, BookDetail, BookListQuery, BooksResponse, ImportFile, ImportResult, RandomAnnotation, UpdateBookInput } from '../../shared/types.js';
 
 export interface Cover {
   bytes: Buffer;
@@ -9,6 +9,7 @@ export type Awaitable<T> = T | Promise<T>;
 
 export interface LibraryRepository {
   listBooks(options?: BookListQuery): Awaitable<BooksResponse>;
+  getRandomAnnotation(excludeId?: string): Awaitable<RandomAnnotation | null>;
   getBook(id: string): Awaitable<BookDetail>;
   updateBook(id: string, metadata: UpdateBookInput): Awaitable<Book>;
   deleteBook(id: string): Awaitable<void>;

@@ -1,6 +1,6 @@
 import Fastify, { LogController, type FastifyBaseLogger } from 'fastify';
 import { MAX_HTML_BYTES } from '../shared/limits.js';
-import type { BooksResponse, DeleteBookResponse, HealthResponse, ImportFile, ImportResponse, User } from '../shared/types.js';
+import type { BooksResponse, DeleteBookResponse, HealthResponse, ImportFile, ImportResponse, RandomAnnotationResponse, User } from '../shared/types.js';
 import { RepositoryError } from './errors.js';
 import { bookListHttpQuery } from './book-list.js';
 import { validFilename } from './filenames.js';
@@ -99,6 +99,13 @@ export async function buildApp({ repositoryForUser, authentication, serveStatic 
 
   app.get<{ Reply: HealthResponse }>('/api/health', async () => health);
   app.get<{ Querystring: Record<string, unknown>; Reply: BooksResponse }>('/api/books', async request => repository(request).listBooks(bookListHttpQuery(request.query)));
+  app.get<{ Querystring: { exclude?: unknown }; Reply: RandomAnnotationResponse }>('/api/books/random-annotation', async request => {
+    const exclude = request.query.exclude;
+    if (exclude !== undefined && (typeof exclude !== 'string' || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(exclude))) {
+      throw new RepositoryError('La anotación no es válida.');
+    }
+    return { selection: await repository(request).getRandomAnnotation(exclude) };
+  });
   app.get<{ Params: { id: string } }>('/api/books/:id', async request => repository(request).getBook(request.params.id));
   app.patch<{ Params: { id: string } }>('/api/books/:id', async request => {
     const body = object(request.body);

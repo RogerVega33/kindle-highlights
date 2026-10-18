@@ -150,7 +150,7 @@ export function useLibrary(notify: Notify) {
     };
   }, [loadBook, cancelOpening]);
 
-  const openBook = useCallback((book: Book) => { navigation.current?.openBook(book.id); }, []);
+  const openBook = useCallback((book: Pick<Book, 'id'>) => { navigation.current?.openBook(book.id); }, []);
   const retryBook = useCallback(() => { if (selectedId.current) void loadBook(selectedId.current); }, [loadBook]);
 
   async function refreshAfterImport() {
