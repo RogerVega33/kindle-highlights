@@ -4,6 +4,8 @@ La aplicación utiliza PostgreSQL 18.
 
 Compose ejecuta `database` y la aplicación en contenedores separados, con un volumen nombrado `postgres_data` para los datos.
 
+Los comandos de esta guía usan `compose.yaml`. Para producción usando la imagen publicada en Docker Hub, sustituye `docker compose` por `docker compose -f compose.prod.yaml`. El nombre del proyecto Compose determina qué volumen se utiliza; conserva el de tu despliegue existente.
+
 ## Configuración
 
 La plantilla `.env.example` contiene valores de ejemplo para el archivo de configuración `.env`. Puedes generar el archivo `.env` con el siguiente comando:

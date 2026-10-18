@@ -25,34 +25,52 @@ Tu biblioteca personal de subrayados y notas de Kindle.
 
 ## Instalación
 
-Requiere Docker y Docker Compose. Prepara el archivo `.env` a partir de `.env.example`. Para más información sobre la base de datos consulta el archivo [docs/database.md](docs/database.md). 
+Requiere Docker y Docker Compose. Solo necesitas descargar [compose.prod.yaml](compose.prod.yaml) y [.env.example](.env.example) en una misma carpeta; no necesitas clonar el repositorio ni compilar.
 
-Desde la raíz del proyecto ejecuta:
+1. Copia `.env.example` como `.env` y configura `PGDATABASE`, `PGUSER` y una contraseña segura en `PGPASSWORD`.
+2. Desde esa carpeta ejecuta:
+
+   ```bash
+   docker compose -f compose.prod.yaml up -d
+   ```
+
+Abre `http://IP_DEL_SERVIDOR:3001` (o [http://localhost:3001](http://localhost:3001) en tu equipo). La base y el esquema se crean automáticamente al iniciar con un volumen vacío; los datos se conservan en un volumen Docker.
+
+Para actualizar la imagen a una nueva versión y recrear los contenedores ejecuta:
+
 ```bash
-docker compose up -d --build
+docker compose -f compose.prod.yaml pull
+docker compose -f compose.prod.yaml up -d
 ```
 
-Abre [http://127.0.0.1:3001](http://127.0.0.1:3001) si ejecutas la aplicación en tu equipo. Si la instalas en un servidor, accede mediante `http://IP_DEL_SERVIDOR:3001`; su firewall debe permitir el puerto 3001.
+Esto solo actualiza las imágenes y conserva los datos ya guardados.
 
-PostgreSQL crea la base al inicializar un volumen vacío y la aplicación instala el esquema automáticamente si la base está vacía.
+### HTTPS con proxy inverso
 
-Para arrancar otra vez sin haber hecho cambios en el código ejecuta:
+Dirige el proxy al puerto `3001` de la aplicación y configura estas cabeceras:
+
+| Cabecera | Valor | Función |
+| --- | --- | --- |
+| `X-Forwarded-Proto` | `https` | Indica que el acceso público usa HTTPS. |
+| `X-Forwarded-Host` | Tu dominio público, con puerto si no es el estándar. | Permite reconocer el dominio público. |
+| `X-Forwarded-For` | `$remote_addr` | Identifica la IP del cliente para limitar los intentos de acceso por IP. |
+
+Iniciar sesión, registrarse, recuperar la cuenta y cambiar la contraseña comparten un límite de 20 solicitudes cada 15 minutos por IP, exitosas o fallidas. Sin `X-Forwarded-For`, todos los usuarios del proxy comparten ese límite.
+
+Define `TRUSTED_PROXY_IP` en `.env` con la IP exacta desde la que el proxy llega al contenedor.
+
+Si el proxy se ejecuta en el servidor anfitrión, su IP vista por la aplicación puede ser la puerta de enlace de la red Docker. Cuando la red del proyecto ya exista, lista las redes y consulta su puerta de enlace (ajusta `kindle-highlights_default` si tiene otro nombre):
+
 ```bash
-docker compose up -d
+sudo docker network ls --format '{{.Name}}'
+sudo docker network inspect kindle-highlights_default --format '{{range .IPAM.Config}}{{println .Gateway}}{{end}}'
 ```
 
-Si realizaste cambios en el código, usa de nuevo `--build`.
+Si devuelve `172.20.0.1` y esa es la dirección desde la que llega el proxy, configura `TRUSTED_PROXY_IP=172.20.0.1`. Si el proxy está en otro contenedor de la misma red, utiliza la IP de ese contenedor, que puede ser distinta de la puerta de enlace.
 
-Para detener los contenedores ejecuta:
-```bash
-docker compose stop
-```
-Los datos no se pierden al detener los contenedores.
+En `compose.prod.yaml`, comenta el `command` HTTP y activa el ejemplo HTTPS comentado; aplica de nuevo `docker compose -f compose.prod.yaml up -d`. Esto permite reconocer HTTPS y emitir cookies `Secure`.
 
-Para revisar los logs ejecuta:
-```bash
-docker compose logs --follow app
-```
+En despliegues HTTPS, restringe el acceso al puerto `3001` para que solo pueda conectarse el proxy; así evitas el acceso directo por HTTP.
 
 ## PWA
 
@@ -66,9 +84,25 @@ Consultar y modificar contenido requiere conexión con el servidor.
 
 ## Desarrollo
 
-Requiere Node.js 22.19 o posterior, Docker y Docker Compose. En desarrollo, PostgreSQL se ejecuta en Docker y Vite y la API se ejecutan en tu equipo. Desde la raíz del proyecto:
+Con el repositorio descargado, crea `.env` a partir de `.env.example` y configura `PGDATABASE`, `PGUSER` y `PGPASSWORD`. Desde la raíz del proyecto, elige una de estas dos opciones; ambas utilizan `compose.yaml`.
 
-1. Prepara `.env` a partir de `.env.example`, configura `PGDATABASE`, `PGUSER` y `PGPASSWORD`, y añade la dirección y puerto de la base para el backend local:
+### Todo con Docker
+
+Requiere únicamente Docker y Docker Compose. Este comando compila y levanta la aplicación y PostgreSQL:
+
+```bash
+docker compose up -d --build
+```
+
+Abre [http://localhost:3001](http://localhost:3001). Después de modificar el código, ejecuta el mismo comando para reconstruir y actualizar la aplicación, conservando los datos.
+
+Para detener todo, usa `docker compose stop`.
+
+### PostgreSQL en Docker y aplicación con Node.js
+
+Requiere además Node.js 22.19 o posterior. Aquí solo la base se ejecuta en Docker; Vite y la API se ejecutan directamente en tu equipo.
+
+1. Añade a `.env` la dirección y el puerto de la base para el servidor local:
 
    ```dotenv
    PGHOST=127.0.0.1
@@ -81,7 +115,7 @@ Requiere Node.js 22.19 o posterior, Docker y Docker Compose. En desarrollo, Post
    docker compose up -d --wait database
    ```
 
-   Este comando inicia el servicio `database`, sin arrancar `app`. Si `app` ya estaba ejecutándose de una sesión anterior, detenlo con `docker compose stop app` para liberar el puerto 3001. La opción `--wait` espera a que PostgreSQL supere su comprobación de salud; si falla, resuelve el error antes de continuar.
+   `--wait` espera a que PostgreSQL esté disponible; si falla, resuelve el error antes de continuar.
 
 3. Instala las dependencias y arranca Vite y la API:
 
@@ -92,7 +126,9 @@ Requiere Node.js 22.19 o posterior, Docker y Docker Compose. En desarrollo, Post
 
 Abre [http://127.0.0.1:5173](http://127.0.0.1:5173). Vite utiliza el puerto 5173 y la API, el 3001. La API crea el esquema automáticamente si la base está vacía.
 
-Para terminar, pulsa `Ctrl+C` en la terminal de desarrollo. PostgreSQL sigue ejecutándose; puedes detenerlo con `docker compose stop database`, conservando sus datos.
+Para terminar, pulsa `Ctrl+C` para detener Vite y la API, y ejecuta `docker compose stop database` para detener PostgreSQL, conservando sus datos.
+
+Producción utiliza `compose.prod.yaml`. Si también la ejecutas en este equipo, usa `-p kindle-highlights-dev` en todos los comandos Compose de desarrollo para separar sus recursos. Esto no cambia los puertos: asigna un puerto distinto a una de las aplicaciones y ajusta el destino del proxy correspondiente. Las instrucciones anteriores asumen que el puerto `3001` está libre.
 
 ## Documentación
 
