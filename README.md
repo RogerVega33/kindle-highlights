@@ -2,6 +2,10 @@
 
 Tu biblioteca personal de subrayados y notas de Kindle.
 
+## Demo
+
+![Demo de Kindle highlights](docs/assets/demo.gif)
+
 ## Funciones
 
 - **Varios usuarios:** cada cuenta tiene una biblioteca privada e independiente.
