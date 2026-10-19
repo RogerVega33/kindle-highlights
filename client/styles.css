@@ -691,10 +691,6 @@ button.annotation-edited:hover { color: var(--green); text-decoration: underline
 .account-menu > button:hover, .account-menu > button:focus-visible { color: var(--green-ink); background: var(--green-pale); }
 .account-menu > button:focus-visible { outline-offset: -2px; }
 .auth-page { flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px; padding-block: 48px; overflow-anchor: none; }
-/* Keep the header in view; only long forms scroll within the available space. */
-.app--auth { height: 100vh; height: 100dvh; min-height: 0; }
-.app--auth > .auth-page { min-height: 0; overflow-y: auto; }
-.app--auth .auth-card { margin-block: auto; }
 .auth-card { width: min(100%, 440px); background: var(--surface-raised); border: 1px solid var(--line); border-radius: 18px; padding: 32px; box-shadow: var(--shadow); }
 .auth-card h1 { font-family: var(--serif); font-size: 2rem; font-weight: 400; line-height: 1.2; margin-bottom: 12px; outline: none; }
 .auth-card > p { color: var(--muted-strong); }
