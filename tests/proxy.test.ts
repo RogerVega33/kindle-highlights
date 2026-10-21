@@ -26,7 +26,7 @@ function appFor(trustedProxies?: string[]) {
 }
 
 test('HTTPS desde el proxy confiable acepta el origen público y emite una cookie Secure', async t => {
-  const app = await appFor([proxy]);
+  const app = await appFor(parseRuntimeOptions([], { TRUSTED_PROXY_IP: proxy }).trustedProxies);
   t.after(() => app.close());
   const response = await app.inject(request);
   assert.equal(response.statusCode, 200);
@@ -37,7 +37,7 @@ test('HTTPS desde el proxy confiable acepta el origen público y emite una cooki
 });
 
 test('conexiones no confiables no pueden falsificar host y protocolo con cabeceras de proxy', async t => {
-  for (const trustedProxies of [undefined, [proxy]]) {
+  for (const trustedProxies of [parseRuntimeOptions([], { TRUSTED_PROXY_IP: '' }).trustedProxies, [proxy]]) {
     const app = await appFor(trustedProxies);
     t.after(() => app.close());
     const response = await app.inject({ ...request, remoteAddress: '192.0.2.11' });
@@ -69,4 +69,29 @@ test('el proxy se configura sólo por IP explícita, sin confiar en cualquier or
     assert.throws(() => parseRuntimeOptions(['--trusted-proxy', value]), /dirección IP exacta/);
   }
   assert.throws(() => parseRuntimeOptions(['--trusted-proxy']), /dirección IP exacta/);
+});
+
+test('TRUSTED_PROXY_IP admite una IP exacta y vacío conserva el acceso directo', () => {
+  for (const value of [proxy, '2001:db8::10', `  ${proxy}  `]) {
+    assert.deepEqual(parseRuntimeOptions([], { TRUSTED_PROXY_IP: value }).trustedProxies, [value.trim()]);
+  }
+  for (const value of [undefined, '', '   ']) {
+    assert.equal(parseRuntimeOptions([], { TRUSTED_PROXY_IP: value }).trustedProxies, undefined);
+  }
+});
+
+test('TRUSTED_PROXY_IP rechaza redes, listas y valores ambiguos sin exponerlos en el error', () => {
+  for (const value of ['true', '*', '1', '0.0.0.0/0', 'loopback', '192.0.2.0/24', `${proxy},::1`, `${proxy} ::1`]) {
+    assert.throws(() => parseRuntimeOptions([], { TRUSTED_PROXY_IP: value }), {
+      message: 'TRUSTED_PROXY_IP requiere la dirección IP exacta del proxy.',
+    });
+  }
+});
+
+test('los proxies explícitos por argumento tienen prioridad sin sumar los del entorno', () => {
+  for (const value of ['192.0.2.11', 'invalid']) {
+    assert.deepEqual(parseRuntimeOptions(['--trusted-proxy', proxy, '--trusted-proxy', '::1'], {
+      TRUSTED_PROXY_IP: value,
+    }).trustedProxies, [proxy, '::1']);
+  }
 });

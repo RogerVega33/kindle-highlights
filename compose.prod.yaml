@@ -3,9 +3,6 @@ name: kindle-highlights
 services:
   app:
     image: rogervega33/kindle-highlights:latest
-    command: ["node", "build/server/index.js", "--production", "--host", "0.0.0.0"]
-    # Para HTTPS con proxy inverso, define TRUSTED_PROXY_IP en .env - comenta el command anterior y descomenta este:
-    # command: ["node", "build/server/index.js", "--production", "--host", "0.0.0.0", "--trusted-proxy", "${TRUSTED_PROXY_IP:?Define la IP exacta del proxy vista por la aplicación.}"]
     restart: unless-stopped
     logging:
       driver: json-file
@@ -14,6 +11,7 @@ services:
         max-file: "3"
     init: true
     environment:
+      TRUSTED_PROXY_IP: "${TRUSTED_PROXY_IP:-}"
       PGHOST: database
       PGPORT: "5432"
       PGDATABASE: ${PGDATABASE:?Define PGDATABASE antes de iniciar la aplicación.}

@@ -71,7 +71,7 @@ sudo docker network inspect kindle-highlights_default --format '{{range .IPAM.Co
 
 Si devuelve `172.20.0.1` y esa es la dirección desde la que llega el proxy, configura `TRUSTED_PROXY_IP=172.20.0.1`. Si el proxy está en otro contenedor de la misma red, utiliza la IP de ese contenedor, que puede ser distinta de la puerta de enlace.
 
-En `compose.prod.yaml`, comenta el `command` HTTP y activa el ejemplo HTTPS comentado; aplica de nuevo `docker compose -f compose.prod.yaml up -d`. Esto permite reconocer HTTPS y emitir cookies `Secure`.
+Compose pasa `TRUSTED_PROXY_IP` a la aplicación; aplica el cambio con `docker compose -f compose.prod.yaml up -d`. Esto permite reconocer HTTPS desde ese proxy y emitir cookies `Secure`. Para acceder directamente por HTTP, deja la variable vacía o comentada.
 
 En despliegues HTTPS, restringe el acceso al puerto `3001` para que solo pueda conectarse el proxy; así evitas el acceso directo por HTTP.
 

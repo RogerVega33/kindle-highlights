@@ -7,7 +7,7 @@ const logger = createLogger();
 
 async function main(): Promise<void> {
   logger.info({ event: 'server.starting' });
-  const { host, port, serveStatic, trustedProxies } = parseRuntimeOptions(process.argv.slice(2));
+  const { host, port, serveStatic, trustedProxies } = parseRuntimeOptions(process.argv.slice(2), process.env);
   const storage = await createPostgresStorage(process.env, { logger });
   let app: Awaited<ReturnType<typeof buildApp>>;
   try {

@@ -12,6 +12,7 @@ services:
         max-file: "3"
     init: true
     environment:
+      TRUSTED_PROXY_IP: "${TRUSTED_PROXY_IP:-}"
       PGHOST: database
       PGPORT: "5432"
       PGDATABASE: ${PGDATABASE:?Define PGDATABASE antes de iniciar la aplicación.}

@@ -7,7 +7,7 @@ export interface RuntimeOptions {
   trustedProxies?: string[];
 }
 
-export function parseRuntimeOptions(args: string[]): RuntimeOptions {
+export function parseRuntimeOptions(args: string[], environment: Readonly<{ TRUSTED_PROXY_IP?: string }> = {}): RuntimeOptions {
   const options: RuntimeOptions = { host: '127.0.0.1', port: 3001, serveStatic: false };
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
@@ -25,6 +25,14 @@ export function parseRuntimeOptions(args: string[]): RuntimeOptions {
       if (!value || !/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 65535) throw new Error('--port debe estar entre 1 y 65535.');
       options.port = Number(value);
     } else throw new Error(`Argumento no reconocido: ${argument}`);
+  }
+  // Las opciones explícitas conservan prioridad, sin ampliar la confianza con el entorno.
+  if (!options.trustedProxies) {
+    const proxy = environment.TRUSTED_PROXY_IP?.trim();
+    if (proxy) {
+      if (!isIP(proxy)) throw new Error('TRUSTED_PROXY_IP requiere la dirección IP exacta del proxy.');
+      options.trustedProxies = [proxy];
+    }
   }
   return options;
 }
